@@ -30,9 +30,7 @@ class TestServiceStatus:
         mock_client.get.assert_called_once_with("unbound/service/status")
         assert result["status"] == "running"
 
-    async def test_all_supported_modules_accepted(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_all_supported_modules_accepted(self, mock_client: AsyncMock) -> None:
         mock_client.get.return_value = {"status": "running"}
         for module in VALID_MODULES:
             mock_client.get.reset_mock()
@@ -84,9 +82,7 @@ class TestServiceRestart:
         mock_client.post.assert_called_once_with("cron/service/restart", None)
         assert result["response"] == "OK"
 
-    async def test_all_supported_modules_accepted(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_all_supported_modules_accepted(self, mock_client: AsyncMock) -> None:
         mock_client.post.return_value = {"response": "OK"}
         for module in VALID_MODULES:
             mock_client.post.reset_mock()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import sys
 
 from opnsense_mcp.client import OPNsenseClient
@@ -9,9 +10,15 @@ from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 from opnsense_mcp.server import create_server
 
 
-async def _probe(config: Config) -> None:
+async def _startup_check(config: Config) -> None:
+    if not config.verify_tls:
+        print(
+            "TLS verification disabled — use only on trusted networks",
+            file=sys.stderr,
+        )
     async with OPNsenseClient(config) as client:
         await client.get("core/dashboard/get")
+    print("Startup complete", file=sys.stderr)
 
 
 def main() -> None:
@@ -22,10 +29,11 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        asyncio.run(_probe(config))
+        asyncio.run(_startup_check(config))
     except OPNsenseAPIError as exc:
         print(
-            f"OPNsense authentication failed ({exc.status_code}) on {exc.path}",
+            f"Startup failed: OPNsense returned {exc.status_code}"
+            f" for {exc.path} — {exc.body}",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -39,9 +47,13 @@ def main() -> None:
         try:
             mcp.run(transport="streamable-http")
         except OSError as exc:
-            raise OSError(
-                f"Cannot bind HTTP server on"
-                f" {config.http_host}:{config.http_port}: {exc}"
-            ) from exc
+            if exc.errno == errno.EADDRINUSE:
+                print(
+                    f"Port {config.http_port} is already in use"
+                    f" — choose a different OPNSENSE_HTTP_PORT",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            raise
     else:
         mcp.run(transport="stdio")

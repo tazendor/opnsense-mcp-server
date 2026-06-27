@@ -104,9 +104,7 @@ class TestFirewallAliasIntegration:
 
 @pytest.mark.integration
 class TestFirewallNatIntegration:
-    async def test_nat_list_returns_rows_key(
-        self, live_client: OPNsenseClient
-    ) -> None:
+    async def test_nat_list_returns_rows_key(self, live_client: OPNsenseClient) -> None:
         result = await _nat_list(live_client)
         assert "rows" in result
 

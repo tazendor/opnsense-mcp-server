@@ -54,7 +54,12 @@ class TestDnsHostOverrideList:
 
 class TestDnsHostOverrideAdd:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
-        host = {"host": "myhost", "domain": "example.com", "rr": "A", "server": "1.2.3.4"}
+        host = {
+            "host": "myhost",
+            "domain": "example.com",
+            "rr": "A",
+            "server": "1.2.3.4",
+        }
         mock_client.post.return_value = {"result": "saved", "uuid": "host-uuid-1"}
         await _dns_host_override_add(mock_client, host=host)
         mock_client.post.assert_called_once_with(

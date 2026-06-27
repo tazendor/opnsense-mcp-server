@@ -16,7 +16,12 @@ class TestRouteList:
     async def test_calls_post_with_default_payload(
         self, mock_client: AsyncMock
     ) -> None:
-        mock_client.post.return_value = {"rows": [], "rowCount": 0, "total": 0, "current": 1}
+        mock_client.post.return_value = {
+            "rows": [],
+            "rowCount": 0,
+            "total": 0,
+            "current": 1,
+        }
         await _route_list(mock_client)
         mock_client.post.assert_called_once_with(
             "routes/routes/searchroute",

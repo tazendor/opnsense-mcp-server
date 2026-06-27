@@ -28,7 +28,12 @@ class TestFirewallRuleList:
     async def test_calls_post_with_default_payload(
         self, mock_client: AsyncMock
     ) -> None:
-        mock_client.post.return_value = {"rows": [], "rowCount": 0, "total": 0, "current": 1}
+        mock_client.post.return_value = {
+            "rows": [],
+            "rowCount": 0,
+            "total": 0,
+            "current": 1,
+        }
         await _rule_list(mock_client)
         mock_client.post.assert_called_once_with(
             "firewall/filter/search_rule",
@@ -49,9 +54,14 @@ class TestFirewallRuleGet:
         mock_client.get.assert_called_once_with("firewall/filter/get_rule/test-uuid-1")
         assert "rule" in result
 
-    async def test_api_error_surfaced_as_tool_error(self, mock_client: AsyncMock) -> None:
+    async def test_api_error_surfaced_as_tool_error(
+        self, mock_client: AsyncMock
+    ) -> None:
         mock_client.get.side_effect = OPNsenseAPIError(
-            status_code=404, body={}, path="firewall/filter/get_rule/bad-uuid", method="GET"
+            status_code=404,
+            body={},
+            path="firewall/filter/get_rule/bad-uuid",
+            method="GET",
         )
         with pytest.raises(ToolError) as exc_info:
             await _rule_get(mock_client, uuid="bad-uuid")
@@ -63,14 +73,19 @@ class TestFirewallRuleAdd:
         rule = {"enabled": "1", "action": "pass", "interface": "lan", "direction": "in"}
         mock_client.post.return_value = {"result": "saved", "uuid": "new-uuid-1"}
         await _rule_add(mock_client, rule=rule)
-        mock_client.post.assert_called_once_with("firewall/filter/add_rule", {"rule": rule})
+        mock_client.post.assert_called_once_with(
+            "firewall/filter/add_rule", {"rule": rule}
+        )
 
     async def test_returns_uuid(self, mock_client: AsyncMock) -> None:
         mock_client.post.return_value = {"result": "saved", "uuid": "new-uuid-1"}
-        result = await _rule_add(
-            mock_client,
-            rule={"enabled": "1", "action": "pass", "interface": "lan", "direction": "in"},
-        )
+        rule = {
+            "enabled": "1",
+            "action": "pass",
+            "interface": "lan",
+            "direction": "in",
+        }
+        result = await _rule_add(mock_client, rule=rule)
         assert result["uuid"] == "new-uuid-1"
 
     async def test_validation_error_surfaced_as_tool_error(
@@ -82,11 +97,14 @@ class TestFirewallRuleAdd:
             path="firewall/filter/add_rule",
             method="POST",
         )
+        rule = {
+            "enabled": "1",
+            "action": "pass",
+            "interface": "bad",
+            "direction": "in",
+        }
         with pytest.raises(ToolError) as exc_info:
-            await _rule_add(
-                mock_client,
-                rule={"enabled": "1", "action": "pass", "interface": "bad", "direction": "in"},
-            )
+            await _rule_add(mock_client, rule=rule)
         assert "400" in str(exc_info.value)
 
 
@@ -99,7 +117,9 @@ class TestFirewallRuleUpdate:
             "firewall/filter/set_rule/rule-uuid-1", {"rule": rule}
         )
 
-    async def test_api_error_surfaced_as_tool_error(self, mock_client: AsyncMock) -> None:
+    async def test_api_error_surfaced_as_tool_error(
+        self, mock_client: AsyncMock
+    ) -> None:
         mock_client.post.side_effect = OPNsenseAPIError(
             status_code=404, body={}, path="firewall/filter/set_rule/bad", method="POST"
         )
@@ -116,7 +136,9 @@ class TestFirewallRuleDelete:
         )
         assert result["result"] == "deleted"
 
-    async def test_api_error_surfaced_as_tool_error(self, mock_client: AsyncMock) -> None:
+    async def test_api_error_surfaced_as_tool_error(
+        self, mock_client: AsyncMock
+    ) -> None:
         mock_client.post.side_effect = OPNsenseAPIError(
             status_code=404, body={}, path="firewall/filter/del_rule/bad", method="POST"
         )
@@ -147,7 +169,9 @@ class TestFirewallAliasGetUuid:
         mock_client.get.assert_called_once_with("firewall/alias/getAliasUUID/MyAlias")
         assert result["uuid"] == "alias-uuid-1"
 
-    async def test_returns_empty_uuid_when_not_found(self, mock_client: AsyncMock) -> None:
+    async def test_returns_empty_uuid_when_not_found(
+        self, mock_client: AsyncMock
+    ) -> None:
         mock_client.get.return_value = {"uuid": ""}
         result = await _alias_get_uuid(mock_client, name="Unknown")
         assert result["uuid"] == ""
@@ -158,7 +182,9 @@ class TestFirewallAliasAdd:
         alias = {"name": "MyHosts", "type": "host", "content": "1.2.3.4"}
         mock_client.post.return_value = {"result": "saved", "uuid": "alias-uuid-1"}
         await _alias_add(mock_client, alias=alias)
-        mock_client.post.assert_called_once_with("firewall/alias/add_item", {"alias": alias})
+        mock_client.post.assert_called_once_with(
+            "firewall/alias/add_item", {"alias": alias}
+        )
 
     async def test_returns_uuid(self, mock_client: AsyncMock) -> None:
         mock_client.post.return_value = {"result": "saved", "uuid": "alias-uuid-1"}
@@ -241,7 +267,9 @@ class TestFirewallNatDelete:
     async def test_calls_endpoint_with_uuid(self, mock_client: AsyncMock) -> None:
         mock_client.post.return_value = {"result": "deleted"}
         result = await _nat_delete(mock_client, uuid="nat-uuid-1")
-        mock_client.post.assert_called_once_with("firewall/nat/delrule/nat-uuid-1", None)
+        mock_client.post.assert_called_once_with(
+            "firewall/nat/delrule/nat-uuid-1", None
+        )
         assert result["result"] == "deleted"
 
 
