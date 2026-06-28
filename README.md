@@ -3,6 +3,8 @@
 [![CI](https://github.com/mindfury/opnsense-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/mindfury/opnsense-mcp-server/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+**GitHub**: https://github.com/mindfury/opnsense-mcp-server
+
 A Python [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes the OPNsense REST API to AI clients such as Claude Desktop and Claude Code.
 
 ## What it does
