@@ -1,9 +1,10 @@
 # OPNsense MCP Server
 
-[![CI](https://github.com/mindfury/opnsense-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/mindfury/opnsense-mcp-server/actions/workflows/ci.yml)
+[![CI](https://github.com/tazendor/opnsense-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/tazendor/opnsense-mcp-server/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/tazendor-opnsense-mcp)](https://pypi.org/project/tazendor-opnsense-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**GitHub**: https://github.com/mindfury/opnsense-mcp-server
+**GitHub**: https://github.com/tazendor/opnsense-mcp-server
 
 A Python [Model Context Protocol](https://modelcontextprotocol.io/) server that exposes the OPNsense REST API to AI clients such as Claude Desktop and Claude Code.
 
@@ -37,7 +38,13 @@ Mutating operations follow OPNsense's staged-then-apply model: changes are stage
 ## Installation
 
 ```bash
-git clone https://github.com/mindfury/opnsense-mcp-server.git
+pip install tazendor-opnsense-mcp
+```
+
+Or from source:
+
+```bash
+git clone https://github.com/tazendor/opnsense-mcp-server.git
 cd opnsense-mcp-server
 uv sync
 ```
