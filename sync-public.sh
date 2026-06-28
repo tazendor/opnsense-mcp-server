@@ -11,7 +11,7 @@ echo "Merging main..."
 git merge main --no-edit
 
 # Strip internal artifacts re-introduced by the merge.
-STRIP_PATHS=(.specify/ specs/ CLAUDE.md)
+STRIP_PATHS=(.specify/ specs/ CLAUDE.md sync-public.sh)
 STRIPPED=()
 for path in "${STRIP_PATHS[@]}"; do
     if git ls-files --error-unmatch "$path" &>/dev/null 2>&1; then
