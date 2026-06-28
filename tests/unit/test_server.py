@@ -9,6 +9,8 @@ from opnsense_mcp.config import Config
 from opnsense_mcp.server import create_server
 from opnsense_mcp.tools.system import _system_status
 
+_STATUS_RESP = {"metadata": {"system": {"status": 2}}}
+
 
 @pytest.fixture
 def server_config() -> Config:
@@ -25,26 +27,26 @@ class TestClientLazyInit:
         Without lazy init, OPNsenseClient._client raises RuntimeError when
         create_server creates the client without entering the async context manager.
         """
-        respx.get("https://opnsense.test/api/core/dashboard/get").mock(
-            return_value=httpx.Response(200, json={"versions": {"product": "24.7"}})
+        respx.get("https://opnsense.test/api/core/system/status").mock(
+            return_value=httpx.Response(200, json=_STATUS_RESP)
         )
         client = OPNsenseClient(server_config)
         result = await _system_status(client)
-        assert "versions" in result
+        assert "metadata" in result
 
     @respx.mock
     async def test_create_server_tool_calls_reach_opnsense(
         self, server_config: Config
     ) -> None:
         """Tool registered via create_server makes real HTTP calls end-to-end."""
-        respx.get("https://opnsense.test/api/core/dashboard/get").mock(
-            return_value=httpx.Response(200, json={"versions": {"product": "24.7"}})
+        respx.get("https://opnsense.test/api/core/system/status").mock(
+            return_value=httpx.Response(200, json=_STATUS_RESP)
         )
         mcp = create_server(server_config)
         tool_fn = mcp._tool_manager._tools["system_status"].fn
         result = await tool_fn()
         assert isinstance(result, dict)
-        assert "versions" in result
+        assert "metadata" in result
 
 
 class TestClientShutdown:
@@ -96,7 +98,10 @@ class TestServerWiring:
         """Startup probe and server share one OPNsenseClient instance."""
         client = OPNsenseClient(server_config)
         respx.get("https://opnsense.test/api/core/dashboard/get").mock(
-            return_value=httpx.Response(200, json={"versions": {}})
+            return_value=httpx.Response(200, json={})
+        )
+        respx.get("https://opnsense.test/api/core/system/status").mock(
+            return_value=httpx.Response(200, json=_STATUS_RESP)
         )
         await client.get("core/dashboard/get")
         http_after_probe = client._http

@@ -19,7 +19,7 @@ async def _startup_check(config: Config, client: OPNsenseClient) -> None:
             "TLS verification disabled — use only on trusted networks",
             file=sys.stderr,
         )
-    await client.get("core/dashboard/get")
+    await client.get("core/system/status")
     print("Startup complete", file=sys.stderr)
 
 

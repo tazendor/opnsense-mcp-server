@@ -12,10 +12,10 @@ from opnsense_mcp.tools.system import (
 
 class TestSystemStatus:
     async def test_returns_dict(self, mock_client: AsyncMock) -> None:
-        mock_client.get.return_value = {"versions": {"opnsense": "24.7"}, "cpu": {}}
+        mock_client.get.return_value = {"metadata": {"system": {"status": 2}}}
         result = await _system_status(mock_client)
-        mock_client.get.assert_called_once_with("core/dashboard/get")
-        assert result == {"versions": {"opnsense": "24.7"}, "cpu": {}}
+        mock_client.get.assert_called_once_with("core/system/status")
+        assert result == {"metadata": {"system": {"status": 2}}}
 
     async def test_api_error_surfaced_as_tool_error(
         self, mock_client: AsyncMock
@@ -23,7 +23,7 @@ class TestSystemStatus:
         mock_client.get.side_effect = OPNsenseAPIError(
             status_code=401,
             body={"message": "Unauthorized"},
-            path="core/dashboard/get",
+            path="core/system/status",
             method="GET",
         )
         with pytest.raises(ToolError) as exc_info:

@@ -10,7 +10,7 @@ from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 
 async def _system_status(client: OPNsenseClient) -> dict[str, Any]:
     try:
-        return await client.get("core/dashboard/get")
+        return await client.get("core/system/status")
     except OPNsenseAPIError as exc:
         raise ToolError.from_api_error(exc) from exc
 
@@ -32,8 +32,8 @@ async def _system_config_backup(client: OPNsenseClient) -> str:
 def register_tools(mcp: FastMCP, client: OPNsenseClient) -> None:
     @mcp.tool()
     async def system_status() -> dict[str, Any]:
-        """Retrieve current system status including firmware version, CPU usage,
-        memory usage, and uptime."""
+        """Retrieve current system health status including any pending alerts
+        or subsystem messages."""
         return await _system_status(client)
 
     @mcp.tool()
