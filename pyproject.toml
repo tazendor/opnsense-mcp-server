@@ -1,5 +1,5 @@
 [project]
-name = "opnsense-mcp"
+name = "tazendor-opnsense-mcp"
 version = "0.1.0"
 description = "MCP server for the OPNsense REST API"
 license = { text = "MIT" }
