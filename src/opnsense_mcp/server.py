@@ -16,10 +16,8 @@ def create_server(config: Config, client: OPNsenseClient | None = None) -> FastM
 
     @asynccontextmanager
     async def lifespan(app: FastMCP) -> AsyncGenerator[None, None]:
-        try:
+        async with client:
             yield
-        finally:
-            await client.aclose()
 
     mcp: FastMCP = FastMCP(
         "opnsense-mcp-server",
