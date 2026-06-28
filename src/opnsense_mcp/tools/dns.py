@@ -51,6 +51,20 @@ async def _dns_host_override_delete(
         raise ToolError.from_api_error(exc) from exc
 
 
+async def _dns_lookup(client: OPNsenseClient, hostname: str) -> dict[str, Any]:
+    try:
+        return await client.get(f"unbound/diagnostics/lookup/{hostname}")
+    except OPNsenseAPIError as exc:
+        raise ToolError.from_api_error(exc) from exc
+
+
+async def _dns_flush_cache(client: OPNsenseClient) -> dict[str, Any]:
+    try:
+        return await client.post("unbound/diagnostics/clearCache", None)
+    except OPNsenseAPIError as exc:
+        raise ToolError.from_api_error(exc) from exc
+
+
 async def _dns_apply(client: OPNsenseClient) -> dict[str, Any]:
     try:
         return await client.post("unbound/service/reconfigure", None)
@@ -85,6 +99,18 @@ def register_tools(mcp: FastMCP, client: OPNsenseClient) -> None:
     async def dns_host_override_delete(uuid: str) -> dict[str, Any]:
         """Delete a DNS host override by UUID."""
         return await _dns_host_override_delete(client, uuid)
+
+    @mcp.tool()
+    async def dns_lookup(hostname: str) -> dict[str, Any]:
+        """Perform a DNS lookup for a hostname using the local Unbound resolver.
+        Returns all records found including A, AAAA, CNAME, and TTL information."""
+        return await _dns_lookup(client, hostname)
+
+    @mcp.tool()
+    async def dns_flush_cache() -> dict[str, Any]:
+        """Flush the entire Unbound DNS resolver cache. Use after making DNS
+        changes that need to propagate immediately."""
+        return await _dns_flush_cache(client)
 
     @mcp.tool()
     async def dns_apply() -> dict[str, Any]:

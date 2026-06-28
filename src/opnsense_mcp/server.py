@@ -7,7 +7,16 @@ from mcp.server.fastmcp import FastMCP
 
 from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.config import Config
-from opnsense_mcp.tools import dhcp, dns, firewall, interfaces, routes, services, system
+from opnsense_mcp.tools import (
+    dhcp,
+    dns,
+    firewall,
+    ids,
+    interfaces,
+    routes,
+    services,
+    system,
+)
 
 
 def create_server(config: Config, client: OPNsenseClient | None = None) -> FastMCP:
@@ -25,6 +34,6 @@ def create_server(config: Config, client: OPNsenseClient | None = None) -> FastM
         port=config.http_port,
         lifespan=lifespan,
     )
-    for module in (system, firewall, interfaces, routes, dhcp, dns, services):
+    for module in (system, firewall, interfaces, routes, dhcp, dns, ids, services):
         module.register_tools(mcp, client)
     return mcp

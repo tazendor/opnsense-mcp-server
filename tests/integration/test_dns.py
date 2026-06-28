@@ -3,9 +3,11 @@ import pytest
 from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.tools.dns import (
     _dns_apply,
+    _dns_flush_cache,
     _dns_host_override_add,
     _dns_host_override_delete,
     _dns_host_override_list,
+    _dns_lookup,
     _dns_settings_get,
 )
 
@@ -23,6 +25,18 @@ class TestDnsIntegration:
     ) -> None:
         result = await _dns_host_override_list(live_client)
         assert "rows" in result
+
+    async def test_dns_lookup_returns_records(
+        self, live_client: OPNsenseClient
+    ) -> None:
+        result = await _dns_lookup(live_client, "opnsense.org")
+        assert isinstance(result, dict)
+
+    async def test_dns_flush_cache_returns_ok(
+        self, live_client: OPNsenseClient
+    ) -> None:
+        result = await _dns_flush_cache(live_client)
+        assert result.get("status") == "ok"
 
     async def test_host_override_crud_cycle(self, live_client: OPNsenseClient) -> None:
         host = {

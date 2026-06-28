@@ -5,10 +5,12 @@ import pytest
 from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 from opnsense_mcp.tools.dns import (
     _dns_apply,
+    _dns_flush_cache,
     _dns_host_override_add,
     _dns_host_override_delete,
     _dns_host_override_list,
     _dns_host_override_update,
+    _dns_lookup,
     _dns_settings_get,
 )
 
@@ -133,6 +135,63 @@ class TestDnsHostOverrideDelete:
         )
         with pytest.raises(ToolError):
             await _dns_host_override_delete(mock_client, uuid="bad")
+
+
+class TestDnsLookup:
+    async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
+        mock_client.get.return_value = {
+            "example.com": [{"type": "A", "address": "1.2.3.4"}]
+        }
+        await _dns_lookup(mock_client, "example.com")
+        mock_client.get.assert_called_once_with(
+            "unbound/diagnostics/lookup/example.com"
+        )
+
+    async def test_returns_response(self, mock_client: AsyncMock) -> None:
+        payload = {
+            "example.com": [{"type": "A", "address": "93.184.216.34", "ttl": 3600}]
+        }
+        mock_client.get.return_value = payload
+        result = await _dns_lookup(mock_client, "example.com")
+        assert result == payload
+
+    async def test_api_error_surfaced_as_tool_error(
+        self, mock_client: AsyncMock
+    ) -> None:
+        mock_client.get.side_effect = OPNsenseAPIError(
+            status_code=500,
+            body={},
+            path="unbound/diagnostics/lookup/bad",
+            method="GET",
+        )
+        with pytest.raises(ToolError) as exc_info:
+            await _dns_lookup(mock_client, "bad")
+        assert "500" in str(exc_info.value)
+
+
+class TestDnsFlushCache:
+    async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
+        mock_client.post.return_value = {"status": "ok"}
+        await _dns_flush_cache(mock_client)
+        mock_client.post.assert_called_once_with("unbound/diagnostics/clearCache", None)
+
+    async def test_returns_response(self, mock_client: AsyncMock) -> None:
+        mock_client.post.return_value = {"status": "ok"}
+        result = await _dns_flush_cache(mock_client)
+        assert result["status"] == "ok"
+
+    async def test_api_error_surfaced_as_tool_error(
+        self, mock_client: AsyncMock
+    ) -> None:
+        mock_client.post.side_effect = OPNsenseAPIError(
+            status_code=500,
+            body={},
+            path="unbound/diagnostics/clearCache",
+            method="POST",
+        )
+        with pytest.raises(ToolError) as exc_info:
+            await _dns_flush_cache(mock_client)
+        assert "500" in str(exc_info.value)
 
 
 class TestDnsApply:
