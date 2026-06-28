@@ -36,7 +36,7 @@ class TestStartupValidation:
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
-        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda: base_config)
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: base_config)
         monkeypatch.setattr(
             "opnsense_mcp.__main__.OPNsenseClient",
             MagicMock(return_value=mock_client_cm),
@@ -61,7 +61,7 @@ class TestStartupValidation:
             path="core/dashboard/get",
             method="GET",
         )
-        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda: base_config)
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: base_config)
         monkeypatch.setattr(
             "opnsense_mcp.__main__.OPNsenseClient",
             MagicMock(return_value=mock_client_cm),
@@ -82,7 +82,7 @@ class TestStartupValidation:
         mock_client_cm.get.side_effect = ToolError(
             "Could not connect to OPNsense for core/dashboard/get"
         )
-        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda: base_config)
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: base_config)
         monkeypatch.setattr(
             "opnsense_mcp.__main__.OPNsenseClient",
             MagicMock(return_value=mock_client_cm),
@@ -106,7 +106,7 @@ class TestStartupValidation:
             api_secret="s",
             verify_tls=False,
         )
-        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda: config)
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: config)
         monkeypatch.setattr(
             "opnsense_mcp.__main__.OPNsenseClient",
             MagicMock(return_value=mock_client_cm),
@@ -127,7 +127,7 @@ class TestTransportConfiguration:
         mock_client_cm: AsyncMock,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda: base_config)
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: base_config)
         monkeypatch.setattr(
             "opnsense_mcp.__main__.OPNsenseClient",
             MagicMock(return_value=mock_client_cm),
@@ -152,7 +152,7 @@ class TestTransportConfiguration:
             http_host="127.0.0.1",
             http_port=8080,
         )
-        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda: config)
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: config)
         monkeypatch.setattr(
             "opnsense_mcp.__main__.OPNsenseClient",
             MagicMock(return_value=mock_client_cm),
@@ -178,7 +178,7 @@ class TestTransportConfiguration:
             http_host="127.0.0.1",
             http_port=8080,
         )
-        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda: config)
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: config)
         monkeypatch.setattr(
             "opnsense_mcp.__main__.OPNsenseClient",
             MagicMock(return_value=mock_client_cm),

@@ -16,17 +16,7 @@ class OPNsenseClient:
         self._http: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> OPNsenseClient:
-        self._http = httpx.AsyncClient(
-            base_url=self._config.url,
-            auth=httpx.BasicAuth(self._config.api_key, self._config.api_secret),
-            verify=self._config.verify_tls,
-            timeout=httpx.Timeout(
-                connect=self._config.connect_timeout,
-                read=self._config.read_timeout,
-                write=None,
-                pool=None,
-            ),
-        )
+        self._http = self._make_http()
         return self
 
     async def __aexit__(
@@ -39,12 +29,23 @@ class OPNsenseClient:
             await self._http.aclose()
             self._http = None
 
+    def _make_http(self) -> httpx.AsyncClient:
+        return httpx.AsyncClient(
+            base_url=self._config.url,
+            auth=httpx.BasicAuth(self._config.api_key, self._config.api_secret),
+            verify=self._config.verify_tls,
+            timeout=httpx.Timeout(
+                connect=self._config.connect_timeout,
+                read=self._config.read_timeout,
+                write=None,
+                pool=None,
+            ),
+        )
+
     @property
     def _client(self) -> httpx.AsyncClient:
         if self._http is None:
-            raise RuntimeError(
-                "OPNsenseClient must be used as an async context manager"
-            )
+            self._http = self._make_http()
         return self._http
 
     def _log(

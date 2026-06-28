@@ -3,11 +3,14 @@ from __future__ import annotations
 import asyncio
 import errno
 import sys
+from pathlib import Path
 
 from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.config import Config
 from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 from opnsense_mcp.server import create_server
+
+_DEFAULT_CONFIG = Path.home() / ".config" / "opnsense-mcp" / "config.toml"
 
 
 async def _startup_check(config: Config) -> None:
@@ -23,7 +26,7 @@ async def _startup_check(config: Config) -> None:
 
 def main() -> None:
     try:
-        config = Config.load()
+        config = Config.load(_DEFAULT_CONFIG)
     except ValueError as exc:
         print(f"Configuration error: {exc}", file=sys.stderr)
         sys.exit(1)
