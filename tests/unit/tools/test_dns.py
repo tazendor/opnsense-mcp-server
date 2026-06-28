@@ -12,6 +12,9 @@ from opnsense_mcp.tools.dns import (
     _dns_settings_get,
 )
 
+UUID_DNS = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+INVALID_UUID = "not-a-uuid"
+
 
 class TestDnsSettingsGet:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
@@ -33,7 +36,7 @@ class TestDnsHostOverrideList:
         mock_client.get.assert_called_once_with("unbound/settings/searchHostOverride")
 
     async def test_returns_rows(self, mock_client: AsyncMock) -> None:
-        rows = [{"uuid": "h1", "host": "myhost", "domain": "example.com"}]
+        rows = [{"uuid": UUID_DNS, "host": "myhost", "domain": "example.com"}]
         mock_client.get.return_value = {"rows": rows, "total": 1}
         result = await _dns_host_override_list(mock_client)
         assert result["rows"] == rows
@@ -60,19 +63,19 @@ class TestDnsHostOverrideAdd:
             "rr": "A",
             "server": "1.2.3.4",
         }
-        mock_client.post.return_value = {"result": "saved", "uuid": "host-uuid-1"}
+        mock_client.post.return_value = {"result": "saved", "uuid": UUID_DNS}
         await _dns_host_override_add(mock_client, host=host)
         mock_client.post.assert_called_once_with(
             "unbound/settings/addHostOverride", {"host": host}
         )
 
     async def test_returns_uuid(self, mock_client: AsyncMock) -> None:
-        mock_client.post.return_value = {"result": "saved", "uuid": "host-uuid-1"}
+        mock_client.post.return_value = {"result": "saved", "uuid": UUID_DNS}
         result = await _dns_host_override_add(
             mock_client,
             host={"host": "x", "domain": "example.com", "rr": "A", "server": "1.1.1.1"},
         )
-        assert result["uuid"] == "host-uuid-1"
+        assert result["uuid"] == UUID_DNS
 
     async def test_validation_error_surfaced_as_tool_error(
         self, mock_client: AsyncMock
@@ -95,9 +98,9 @@ class TestDnsHostOverrideUpdate:
     async def test_calls_endpoint_with_uuid(self, mock_client: AsyncMock) -> None:
         host = {"server": "5.6.7.8"}
         mock_client.post.return_value = {"result": "saved"}
-        await _dns_host_override_update(mock_client, uuid="host-uuid-1", host=host)
+        await _dns_host_override_update(mock_client, uuid=UUID_DNS, host=host)
         mock_client.post.assert_called_once_with(
-            "unbound/settings/setHostOverride/host-uuid-1", {"host": host}
+            f"unbound/settings/setHostOverride/{UUID_DNS}", {"host": host}
         )
 
     async def test_api_error_surfaced_as_tool_error(
@@ -106,19 +109,26 @@ class TestDnsHostOverrideUpdate:
         mock_client.post.side_effect = OPNsenseAPIError(
             status_code=404,
             body={},
-            path="unbound/settings/setHostOverride/bad",
+            path=f"unbound/settings/setHostOverride/{UUID_DNS}",
             method="POST",
         )
         with pytest.raises(ToolError):
-            await _dns_host_override_update(mock_client, uuid="bad", host={})
+            await _dns_host_override_update(mock_client, uuid=UUID_DNS, host={})
+
+    async def test_invalid_uuid_raises_tool_error(
+        self, mock_client: AsyncMock
+    ) -> None:
+        with pytest.raises(ToolError, match="Invalid UUID"):
+            await _dns_host_override_update(mock_client, uuid=INVALID_UUID, host={})
+        mock_client.post.assert_not_called()
 
 
 class TestDnsHostOverrideDelete:
     async def test_calls_endpoint_with_uuid(self, mock_client: AsyncMock) -> None:
         mock_client.post.return_value = {"result": "deleted"}
-        result = await _dns_host_override_delete(mock_client, uuid="host-uuid-1")
+        result = await _dns_host_override_delete(mock_client, uuid=UUID_DNS)
         mock_client.post.assert_called_once_with(
-            "unbound/settings/delHostOverride/host-uuid-1", None
+            f"unbound/settings/delHostOverride/{UUID_DNS}", None
         )
         assert result["result"] == "deleted"
 
@@ -128,11 +138,18 @@ class TestDnsHostOverrideDelete:
         mock_client.post.side_effect = OPNsenseAPIError(
             status_code=404,
             body={},
-            path="unbound/settings/delHostOverride/bad",
+            path=f"unbound/settings/delHostOverride/{UUID_DNS}",
             method="POST",
         )
         with pytest.raises(ToolError):
-            await _dns_host_override_delete(mock_client, uuid="bad")
+            await _dns_host_override_delete(mock_client, uuid=UUID_DNS)
+
+    async def test_invalid_uuid_raises_tool_error(
+        self, mock_client: AsyncMock
+    ) -> None:
+        with pytest.raises(ToolError, match="Invalid UUID"):
+            await _dns_host_override_delete(mock_client, uuid=INVALID_UUID)
+        mock_client.post.assert_not_called()
 
 
 class TestDnsApply:

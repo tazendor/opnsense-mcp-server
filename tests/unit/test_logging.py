@@ -1,4 +1,6 @@
-"""Verify OPNsenseClient emits structured diagnostic log lines to stderr."""
+"""Verify OPNsenseClient emits structured JSON log lines to stderr."""
+
+import json
 
 import httpx
 import pytest
@@ -18,6 +20,11 @@ def client_config() -> Config:
     )
 
 
+def _parse_log(err: str) -> dict:  # type: ignore[type-arg]
+    line = err.strip().splitlines()[0]
+    return json.loads(line)  # type: ignore[no-any-return]
+
+
 class TestGetLogging:
     @respx.mock
     async def test_successful_get_logs_success_outcome(
@@ -31,11 +38,11 @@ class TestGetLogging:
         async with OPNsenseClient(client_config) as client:
             await client.get("core/dashboard/get")
 
-        err = capsys.readouterr().err
-        assert "GET" in err
-        assert "core/dashboard/get" in err
-        assert "status=200" in err
-        assert "outcome=success" in err
+        record = _parse_log(capsys.readouterr().err)
+        assert record["method"] == "GET"
+        assert record["path"] == "core/dashboard/get"
+        assert record["status_code"] == 200
+        assert record["outcome"] == "success"
 
     @respx.mock
     async def test_failed_get_logs_error_outcome(
@@ -50,10 +57,10 @@ class TestGetLogging:
             with pytest.raises(OPNsenseAPIError):
                 await client.get("core/dashboard/get")
 
-        err = capsys.readouterr().err
-        assert "GET" in err
-        assert "status=401" in err
-        assert "outcome=error" in err
+        record = _parse_log(capsys.readouterr().err)
+        assert record["method"] == "GET"
+        assert record["status_code"] == 401
+        assert record["outcome"] == "error"
 
     @respx.mock
     async def test_log_line_contains_timestamp(
@@ -67,9 +74,24 @@ class TestGetLogging:
         async with OPNsenseClient(client_config) as client:
             await client.get("firmware/status/check")
 
-        err = capsys.readouterr().err
-        # ISO timestamp starts with year
-        assert "202" in err
+        record = _parse_log(capsys.readouterr().err)
+        assert record["ts"].startswith("202")
+
+    @respx.mock
+    async def test_log_line_is_valid_json(
+        self,
+        client_config: Config,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        respx.get("https://opnsense.test/api/core/system/status").mock(
+            return_value=httpx.Response(200, json={})
+        )
+        async with OPNsenseClient(client_config) as client:
+            await client.get("core/system/status")
+
+        err = capsys.readouterr().err.strip()
+        parsed = json.loads(err)
+        assert {"ts", "method", "path", "status_code", "outcome"} <= parsed.keys()
 
 
 class TestPostLogging:
@@ -88,11 +110,11 @@ class TestPostLogging:
                 {"current": 1, "rowCount": -1, "searchPhrase": ""},
             )
 
-        err = capsys.readouterr().err
-        assert "POST" in err
-        assert "firewall/filter/search_rule" in err
-        assert "status=200" in err
-        assert "outcome=success" in err
+        record = _parse_log(capsys.readouterr().err)
+        assert record["method"] == "POST"
+        assert record["path"] == "firewall/filter/search_rule"
+        assert record["status_code"] == 200
+        assert record["outcome"] == "success"
 
     @respx.mock
     async def test_failed_post_logs_error_outcome(
@@ -107,10 +129,10 @@ class TestPostLogging:
             with pytest.raises(OPNsenseAPIError):
                 await client.post("firewall/filter/add_rule", {"rule": {}})
 
-        err = capsys.readouterr().err
-        assert "POST" in err
-        assert "status=400" in err
-        assert "outcome=error" in err
+        record = _parse_log(capsys.readouterr().err)
+        assert record["method"] == "POST"
+        assert record["status_code"] == 400
+        assert record["outcome"] == "error"
 
 
 class TestGetTextLogging:
@@ -126,10 +148,10 @@ class TestGetTextLogging:
         async with OPNsenseClient(client_config) as client:
             await client.get_text("core/backup/download/this")
 
-        err = capsys.readouterr().err
-        assert "GET" in err
-        assert "core/backup/download/this" in err
-        assert "outcome=success" in err
+        record = _parse_log(capsys.readouterr().err)
+        assert record["method"] == "GET"
+        assert record["path"] == "core/backup/download/this"
+        assert record["outcome"] == "success"
 
 
 class TestLogSanitization:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 from datetime import UTC, datetime
 from typing import Any
@@ -60,13 +61,14 @@ class OPNsenseClient:
         status_code: int | None,
         outcome: str,
     ) -> None:
-        ts = datetime.now(UTC).isoformat()
-        safe_path = path.replace("\r", "").replace("\n", " ")
-        print(
-            f"{ts} {method} {safe_path} status={status_code} outcome={outcome}",
-            file=sys.stderr,
-            flush=True,
-        )
+        record = {
+            "ts": datetime.now(UTC).isoformat(),
+            "method": method,
+            "path": path.replace("\r", "").replace("\n", " "),
+            "status_code": status_code,
+            "outcome": outcome,
+        }
+        print(json.dumps(record), file=sys.stderr, flush=True)
 
     async def get(self, path: str) -> dict[str, Any]:
         try:

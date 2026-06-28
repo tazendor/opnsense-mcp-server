@@ -4,6 +4,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from opnsense_mcp._validators import validate_uuid
 from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 
@@ -33,6 +34,7 @@ async def _route_add(client: OPNsenseClient, route: dict[str, Any]) -> dict[str,
 async def _route_update(
     client: OPNsenseClient, uuid: str, route: dict[str, Any]
 ) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"routes/routes/setroute/{uuid}", {"route": route})
     except OPNsenseAPIError as exc:
@@ -40,6 +42,7 @@ async def _route_update(
 
 
 async def _route_delete(client: OPNsenseClient, uuid: str) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"routes/routes/delroute/{uuid}", None)
     except OPNsenseAPIError as exc:

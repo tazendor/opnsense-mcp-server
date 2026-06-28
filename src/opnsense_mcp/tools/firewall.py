@@ -4,6 +4,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from opnsense_mcp._validators import validate_alias_name, validate_uuid
 from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 
@@ -28,6 +29,7 @@ async def _rule_list(
 
 
 async def _rule_get(client: OPNsenseClient, uuid: str) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.get(f"firewall/filter/get_rule/{uuid}")
     except OPNsenseAPIError as exc:
@@ -44,6 +46,7 @@ async def _rule_add(client: OPNsenseClient, rule: dict[str, Any]) -> dict[str, A
 async def _rule_update(
     client: OPNsenseClient, uuid: str, rule: dict[str, Any]
 ) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"firewall/filter/set_rule/{uuid}", {"rule": rule})
     except OPNsenseAPIError as exc:
@@ -51,6 +54,7 @@ async def _rule_update(
 
 
 async def _rule_delete(client: OPNsenseClient, uuid: str) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"firewall/filter/del_rule/{uuid}", None)
     except OPNsenseAPIError as exc:
@@ -77,6 +81,7 @@ async def _alias_list(client: OPNsenseClient) -> dict[str, Any]:
 
 
 async def _alias_get_uuid(client: OPNsenseClient, name: str) -> dict[str, Any]:
+    validate_alias_name(name)
     try:
         return await client.get(f"firewall/alias/getAliasUUID/{name}")
     except OPNsenseAPIError as exc:
@@ -93,6 +98,7 @@ async def _alias_add(client: OPNsenseClient, alias: dict[str, Any]) -> dict[str,
 async def _alias_update(
     client: OPNsenseClient, uuid: str, alias: dict[str, Any]
 ) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"firewall/alias/set_item/{uuid}", {"alias": alias})
     except OPNsenseAPIError as exc:
@@ -100,6 +106,7 @@ async def _alias_update(
 
 
 async def _alias_delete(client: OPNsenseClient, uuid: str) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"firewall/alias/del_item/{uuid}", None)
     except OPNsenseAPIError as exc:
@@ -143,6 +150,7 @@ async def _nat_add(client: OPNsenseClient, rule: dict[str, Any]) -> dict[str, An
 async def _nat_update(
     client: OPNsenseClient, uuid: str, rule: dict[str, Any]
 ) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"firewall/d_nat/setrule/{uuid}", {"rule": rule})
     except OPNsenseAPIError as exc:
@@ -150,6 +158,7 @@ async def _nat_update(
 
 
 async def _nat_delete(client: OPNsenseClient, uuid: str) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"firewall/d_nat/delrule/{uuid}", None)
     except OPNsenseAPIError as exc:
