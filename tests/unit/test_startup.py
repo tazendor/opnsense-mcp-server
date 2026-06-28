@@ -43,7 +43,9 @@ class TestStartupValidation:
             MagicMock(return_value=mock_client_cm),
         )
         mock_mcp = MagicMock()
-        monkeypatch.setattr("opnsense_mcp.__main__.create_server", lambda c: mock_mcp)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.create_server", lambda c, client=None: mock_mcp
+        )
 
         main()
 
@@ -113,7 +115,9 @@ class TestStartupValidation:
             MagicMock(return_value=mock_client_cm),
         )
         mock_mcp = MagicMock()
-        monkeypatch.setattr("opnsense_mcp.__main__.create_server", lambda c: mock_mcp)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.create_server", lambda c, client=None: mock_mcp
+        )
 
         main()
 
@@ -134,7 +138,9 @@ class TestTransportConfiguration:
             MagicMock(return_value=mock_client_cm),
         )
         mock_mcp = MagicMock()
-        monkeypatch.setattr("opnsense_mcp.__main__.create_server", lambda c: mock_mcp)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.create_server", lambda c, client=None: mock_mcp
+        )
 
         main()
 
@@ -159,7 +165,9 @@ class TestTransportConfiguration:
             MagicMock(return_value=mock_client_cm),
         )
         mock_mcp = MagicMock()
-        monkeypatch.setattr("opnsense_mcp.__main__.create_server", lambda c: mock_mcp)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.create_server", lambda c, client=None: mock_mcp
+        )
 
         main()
 
@@ -186,7 +194,9 @@ class TestTransportConfiguration:
         )
         mock_mcp = MagicMock()
         mock_mcp.run.side_effect = OSError(errno.EADDRINUSE, "Address already in use")
-        monkeypatch.setattr("opnsense_mcp.__main__.create_server", lambda c: mock_mcp)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.create_server", lambda c, client=None: mock_mcp
+        )
 
         with pytest.raises(SystemExit) as exc_info:
             main()
@@ -212,8 +222,30 @@ class TestDefaultConfigPath:
             MagicMock(return_value=mock_client_cm),
         )
         mock_mcp = MagicMock()
-        monkeypatch.setattr("opnsense_mcp.__main__.create_server", lambda c: mock_mcp)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.create_server", lambda c, client=None: mock_mcp
+        )
 
         main()
 
         mock_load.assert_called_once_with(_DEFAULT_CONFIG)
+
+    def test_main_passes_client_to_create_server(
+        self,
+        base_config: Config,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        mock_client = MagicMock()
+        mock_client.get = AsyncMock(return_value={})
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: base_config)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.OPNsenseClient",
+            MagicMock(return_value=mock_client),
+        )
+        mock_mcp = MagicMock()
+        mock_create = MagicMock(return_value=mock_mcp)
+        monkeypatch.setattr("opnsense_mcp.__main__.create_server", mock_create)
+
+        main()
+
+        mock_create.assert_called_once_with(base_config, mock_client)

@@ -13,14 +13,13 @@ from opnsense_mcp.server import create_server
 _DEFAULT_CONFIG = Path.home() / ".config" / "opnsense-mcp" / "config.toml"
 
 
-async def _startup_check(config: Config) -> None:
+async def _startup_check(config: Config, client: OPNsenseClient) -> None:
     if not config.verify_tls:
         print(
             "TLS verification disabled — use only on trusted networks",
             file=sys.stderr,
         )
-    async with OPNsenseClient(config) as client:
-        await client.get("core/dashboard/get")
+    await client.get("core/dashboard/get")
     print("Startup complete", file=sys.stderr)
 
 
@@ -31,8 +30,9 @@ def main() -> None:
         print(f"Configuration error: {exc}", file=sys.stderr)
         sys.exit(1)
 
+    client = OPNsenseClient(config)
     try:
-        asyncio.run(_startup_check(config))
+        asyncio.run(_startup_check(config, client))
     except OPNsenseAPIError as exc:
         print(
             f"Startup failed: OPNsense returned {exc.status_code}"
@@ -44,7 +44,7 @@ def main() -> None:
         print(f"Cannot reach OPNsense: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    mcp = create_server(config)
+    mcp = create_server(config, client)
 
     if config.transport == "http":
         try:

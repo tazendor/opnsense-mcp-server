@@ -10,8 +10,11 @@ from opnsense_mcp.config import Config
 from opnsense_mcp.tools import dhcp, dns, firewall, interfaces, routes, services, system
 
 
-def create_server(config: Config) -> FastMCP:
-    client = OPNsenseClient(config)
+def create_server(
+    config: Config, client: OPNsenseClient | None = None
+) -> FastMCP:
+    if client is None:
+        client = OPNsenseClient(config)
 
     @asynccontextmanager
     async def lifespan(app: FastMCP) -> AsyncGenerator[None, None]:

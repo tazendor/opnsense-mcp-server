@@ -47,6 +47,38 @@ class TestClientLazyInit:
         assert "versions" in result
 
 
+class TestClientShutdown:
+    @respx.mock
+    async def test_aclose_closes_http_client(self, server_config: Config) -> None:
+        respx.get("https://opnsense.test/api/core/dashboard/get").mock(
+            return_value=httpx.Response(200, json={})
+        )
+        client = OPNsenseClient(server_config)
+        await client.get("core/dashboard/get")
+        assert client._http is not None
+
+        await client.aclose()
+
+        assert client._http is None
+
+    @respx.mock
+    async def test_lifespan_closes_client_on_shutdown(
+        self, server_config: Config
+    ) -> None:
+        client = OPNsenseClient(server_config)
+        mcp = create_server(server_config, client=client)
+        respx.get("https://opnsense.test/api/core/dashboard/get").mock(
+            return_value=httpx.Response(200, json={})
+        )
+        await client.get("core/dashboard/get")
+        assert client._http is not None
+
+        async with mcp.settings.lifespan(mcp):
+            pass
+
+        assert client._http is None
+
+
 class TestServerWiring:
     def test_all_42_tools_registered(self, server_config: Config) -> None:
         mcp = create_server(server_config)
@@ -56,3 +88,21 @@ class TestServerWiring:
         mcp = create_server(server_config)
         names = list(mcp._tool_manager._tools.keys())
         assert len(names) == len(set(names))
+
+    @respx.mock
+    async def test_create_server_reuses_passed_client(
+        self, server_config: Config
+    ) -> None:
+        """Startup probe and server share one OPNsenseClient instance."""
+        client = OPNsenseClient(server_config)
+        respx.get("https://opnsense.test/api/core/dashboard/get").mock(
+            return_value=httpx.Response(200, json={"versions": {}})
+        )
+        await client.get("core/dashboard/get")
+        http_after_probe = client._http
+
+        mcp = create_server(server_config, client=client)
+        tool_fn = mcp._tool_manager._tools["system_status"].fn
+        await tool_fn()
+
+        assert client._http is http_after_probe

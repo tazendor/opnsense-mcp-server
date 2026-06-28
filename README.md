@@ -108,7 +108,7 @@ uv run ruff format --check src/ tests/
 uv run mypy --strict src/
 ```
 
-All 226 unit and contract tests pass without a live OPNsense instance.
+All unit and contract tests pass without a live OPNsense instance (`pytest -m "not integration"`).
 
 ## Security notes
 
