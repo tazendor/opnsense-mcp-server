@@ -30,7 +30,7 @@ Mutating operations follow OPNsense's staged-then-apply model: changes are stage
 ## Installation
 
 ```bash
-git clone <repo>
+git clone https://github.com/mindfury/opnsense-mcp-server.git
 cd opnsense-mcp-server
 uv sync
 ```
