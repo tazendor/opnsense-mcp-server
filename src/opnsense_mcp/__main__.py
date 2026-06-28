@@ -53,6 +53,12 @@ def main() -> None:
 
     if http_mode:
         _log(
+            "WARNING: HTTP transport enabled — payload limits, rate limiting, "
+            "and client authentication are NOT enforced; "
+            "expose only on trusted local networks",
+            http_mode=True,
+        )
+        _log(
             f"Listening on {config.http_host}:{config.http_port}",
             http_mode=True,
         )

@@ -4,6 +4,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from opnsense_mcp._validators import validate_uuid
 from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 
@@ -34,6 +35,7 @@ async def _dns_host_override_add(
 async def _dns_host_override_update(
     client: OPNsenseClient, uuid: str, host: dict[str, Any]
 ) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(
             f"unbound/settings/setHostOverride/{uuid}", {"host": host}
@@ -45,6 +47,7 @@ async def _dns_host_override_update(
 async def _dns_host_override_delete(
     client: OPNsenseClient, uuid: str
 ) -> dict[str, Any]:
+    validate_uuid(uuid)
     try:
         return await client.post(f"unbound/settings/delHostOverride/{uuid}", None)
     except OPNsenseAPIError as exc:

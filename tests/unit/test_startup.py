@@ -146,6 +146,36 @@ class TestTransportConfiguration:
 
         mock_mcp.run.assert_called_once_with(transport="stdio")
 
+    def test_http_transport_logs_security_warning(
+        self,
+        mock_client_cm: AsyncMock,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        config = Config(
+            url="https://opnsense.test",
+            api_key="k",
+            api_secret="s",
+            transport="http",
+            http_host="127.0.0.1",
+            http_port=8080,
+        )
+        monkeypatch.setattr("opnsense_mcp.__main__.Config.load", lambda _: config)
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.OPNsenseClient",
+            MagicMock(return_value=mock_client_cm),
+        )
+        mock_mcp = MagicMock()
+        monkeypatch.setattr(
+            "opnsense_mcp.__main__.create_server", lambda c, client=None: mock_mcp
+        )
+
+        main()
+
+        err = capsys.readouterr().err
+        assert "WARNING" in err
+        assert "HTTP transport" in err
+
     def test_http_transport_calls_streamable_http_run(
         self,
         mock_client_cm: AsyncMock,
