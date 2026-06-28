@@ -94,6 +94,32 @@ class OPNsenseClient:
         result: dict[str, Any] = response.json()
         return result
 
+    async def get_list(self, path: str) -> list[dict[str, Any]]:
+        try:
+            response = await self._client.get(f"/api/{path}")
+        except httpx.ConnectTimeout as exc:
+            self._log("GET", path, None, "timeout")
+            raise ToolError(f"Connect timeout exceeded for {path}") from exc
+        except httpx.ReadTimeout as exc:
+            self._log("GET", path, None, "timeout")
+            raise ToolError(f"Read timeout exceeded for {path}") from exc
+        except httpx.ConnectError as exc:
+            self._log("GET", path, None, "error")
+            raise ToolError(f"Could not connect to OPNsense for {path}") from exc
+
+        if response.is_error:
+            self._log("GET", path, response.status_code, "error")
+            raise OPNsenseAPIError(
+                status_code=response.status_code,
+                body=_safe_json(response),
+                path=path,
+                method="GET",
+            )
+
+        self._log("GET", path, response.status_code, "success")
+        result: list[dict[str, Any]] = response.json()
+        return result
+
     async def get_text(self, path: str) -> str:
         try:
             response = await self._client.get(f"/api/{path}")

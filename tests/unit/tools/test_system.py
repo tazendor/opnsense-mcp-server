@@ -34,14 +34,15 @@ class TestSystemStatus:
 class TestSystemFirmwareStatus:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
         mock_client.get.return_value = {
-            "status": "ok",
-            "product_version": "24.7",
-            "product_latest": "24.7",
-            "updates": 0,
+            "api_version": "1",
+            "connection": "ok",
+            "downgrade_packages": [],
+            "download_size": "",
+            "last_check": "Mon Jan  1 00:00:00 UTC 2026",
         }
         result = await _system_firmware_status(mock_client)
-        mock_client.get.assert_called_once_with("firmware/status/check")
-        assert result["product_version"] == "24.7"
+        mock_client.get.assert_called_once_with("core/firmware/status")
+        assert "last_check" in result
 
     async def test_api_error_surfaced_as_tool_error(
         self, mock_client: AsyncMock
@@ -49,7 +50,7 @@ class TestSystemFirmwareStatus:
         mock_client.get.side_effect = OPNsenseAPIError(
             status_code=503,
             body={},
-            path="firmware/status/check",
+            path="core/firmware/status",
             method="GET",
         )
         with pytest.raises(ToolError) as exc_info:

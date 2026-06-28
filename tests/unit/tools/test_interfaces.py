@@ -41,33 +41,27 @@ class TestInterfaceConfig:
 
 class TestInterfaceArpTable:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
-        entries = {
-            "rows": [{"ip": "192.168.1.2", "mac": "aa:bb:cc:dd:ee:ff", "intf": "em1"}]
-        }
-        mock_client.get.return_value = entries
+        entries = [{"ip": "192.168.1.2", "mac": "aa:bb:cc:dd:ee:ff", "intf": "em1"}]
+        mock_client.get_list.return_value = entries
         result = await _interface_arp_table(mock_client)
-        mock_client.get.assert_called_once_with("diagnostics/interface/getArp")
+        mock_client.get_list.assert_called_once_with("diagnostics/interface/getArp")
         assert result == entries
 
     async def test_returns_response_unchanged(self, mock_client: AsyncMock) -> None:
-        payload = {
-            "rows": [{"ip": "10.0.0.1", "mac": "ff:ee:dd:cc:bb:aa", "intf": "em0"}]
-        }
-        mock_client.get.return_value = payload
+        payload = [{"ip": "10.0.0.1", "mac": "ff:ee:dd:cc:bb:aa", "intf": "em0"}]
+        mock_client.get_list.return_value = payload
         assert await _interface_arp_table(mock_client) == payload
 
 
 class TestInterfaceNdpTable:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
-        entries = {
-            "rows": [{"ipv6": "fe80::1", "mac": "aa:bb:cc:dd:ee:ff", "intf": "em1"}]
-        }
-        mock_client.get.return_value = entries
+        entries = [{"ipv6": "fe80::1", "mac": "aa:bb:cc:dd:ee:ff", "intf": "em1"}]
+        mock_client.get_list.return_value = entries
         result = await _interface_ndp_table(mock_client)
-        mock_client.get.assert_called_once_with("diagnostics/interface/getNdp")
+        mock_client.get_list.assert_called_once_with("diagnostics/interface/getNdp")
         assert result == entries
 
     async def test_returns_response_unchanged(self, mock_client: AsyncMock) -> None:
-        payload = {"rows": [{"ipv6": "::1", "mac": "00:00:00:00:00:01", "intf": "lo0"}]}
-        mock_client.get.return_value = payload
+        payload = [{"ipv6": "::1", "mac": "00:00:00:00:00:01", "intf": "lo0"}]
+        mock_client.get_list.return_value = payload
         assert await _interface_ndp_table(mock_client) == payload

@@ -17,7 +17,7 @@ async def _system_status(client: OPNsenseClient) -> dict[str, Any]:
 
 async def _system_firmware_status(client: OPNsenseClient) -> dict[str, Any]:
     try:
-        return await client.get("firmware/status/check")
+        return await client.get("core/firmware/status")
     except OPNsenseAPIError as exc:
         raise ToolError.from_api_error(exc) from exc
 
