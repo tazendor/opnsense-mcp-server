@@ -27,7 +27,12 @@ Mutating operations follow OPNsense's staged-then-apply model: changes are stage
 
 - Python 3.12+
 - [`uv`](https://docs.astral.sh/uv/)
-- OPNsense 24.x with API access enabled
+- OPNsense **26.1+** with API access enabled
+
+> **Compatibility**: Tested against OPNsense 26.1.10. The 26.x release series
+> made breaking REST API changes — Kea replaced ISC DHCPv4 (`kea/*` paths),
+> port-forward NAT moved to Destination NAT (`firewall/d_nat/*`), and the system
+> status endpoint changed. Older releases are not supported.
 
 ## Installation
 
