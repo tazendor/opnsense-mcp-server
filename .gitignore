@@ -40,5 +40,8 @@ htmlcov/
 # Claude Code working directory (skills, memory, job state — not a project artifact)
 .claude/
 
+# SpecKit internal tooling (excluded from public repo)
+.specify/
+
 # MCP server config (environment-specific, not a project artifact)
 .mcp.json
