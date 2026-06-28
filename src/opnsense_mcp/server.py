@@ -10,9 +10,7 @@ from opnsense_mcp.config import Config
 from opnsense_mcp.tools import dhcp, dns, firewall, interfaces, routes, services, system
 
 
-def create_server(
-    config: Config, client: OPNsenseClient | None = None
-) -> FastMCP:
+def create_server(config: Config, client: OPNsenseClient | None = None) -> FastMCP:
     if client is None:
         client = OPNsenseClient(config)
 
