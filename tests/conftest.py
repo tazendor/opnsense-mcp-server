@@ -19,6 +19,7 @@ def test_config() -> Config:
 def mock_client() -> AsyncMock:
     client: AsyncMock = AsyncMock(spec=OPNsenseClient)
     client.get = AsyncMock(return_value={})
+    client.get_list = AsyncMock(return_value=[])
     client.get_text = AsyncMock(return_value="")
     client.post = AsyncMock(return_value={})
     return client

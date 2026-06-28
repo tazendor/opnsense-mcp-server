@@ -11,7 +11,7 @@ from opnsense_mcp.tools.services import (
     _service_stop,
 )
 
-VALID_MODULES = ["unbound", "kea", "firmware", "ids", "cron"]
+VALID_MODULES = ["unbound", "kea", "ids"]
 
 
 class TestSupportedModules:
@@ -78,8 +78,8 @@ class TestServiceStop:
 class TestServiceRestart:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
         mock_client.post.return_value = {"response": "OK"}
-        result = await _service_restart(mock_client, module="cron")
-        mock_client.post.assert_called_once_with("cron/service/restart", None)
+        result = await _service_restart(mock_client, module="ids")
+        mock_client.post.assert_called_once_with("ids/service/restart", None)
         assert result["response"] == "OK"
 
     async def test_all_supported_modules_accepted(self, mock_client: AsyncMock) -> None:

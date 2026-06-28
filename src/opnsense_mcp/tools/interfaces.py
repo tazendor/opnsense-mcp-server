@@ -22,16 +22,16 @@ async def _interface_config(client: OPNsenseClient) -> dict[str, Any]:
         raise ToolError.from_api_error(exc) from exc
 
 
-async def _interface_arp_table(client: OPNsenseClient) -> dict[str, Any]:
+async def _interface_arp_table(client: OPNsenseClient) -> list[dict[str, Any]]:
     try:
-        return await client.get("diagnostics/interface/getArp")
+        return await client.get_list("diagnostics/interface/getArp")
     except OPNsenseAPIError as exc:
         raise ToolError.from_api_error(exc) from exc
 
 
-async def _interface_ndp_table(client: OPNsenseClient) -> dict[str, Any]:
+async def _interface_ndp_table(client: OPNsenseClient) -> list[dict[str, Any]]:
     try:
-        return await client.get("diagnostics/interface/getNdp")
+        return await client.get_list("diagnostics/interface/getNdp")
     except OPNsenseAPIError as exc:
         raise ToolError.from_api_error(exc) from exc
 
@@ -50,13 +50,13 @@ def register_tools(mcp: FastMCP, client: OPNsenseClient) -> None:
         return await _interface_config(client)
 
     @mcp.tool()
-    async def interface_arp_table() -> dict[str, Any]:
+    async def interface_arp_table() -> list[dict[str, Any]]:
         """Retrieve the current ARP table — the mapping of IP addresses to
         MAC addresses for devices on locally connected networks."""
         return await _interface_arp_table(client)
 
     @mcp.tool()
-    async def interface_ndp_table() -> dict[str, Any]:
+    async def interface_ndp_table() -> list[dict[str, Any]]:
         """Retrieve the current NDP (Neighbor Discovery Protocol) table —
         the IPv6 equivalent of the ARP table."""
         return await _interface_ndp_table(client)
