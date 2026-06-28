@@ -17,7 +17,7 @@ async def _dhcp_lease_list(
 ) -> dict[str, Any]:
     try:
         return await client.post(
-            "dhcpv4/leases/searchLease",
+            "kea/leases4/search",
             {
                 "current": current,
                 "rowCount": row_count,
@@ -31,14 +31,14 @@ async def _dhcp_lease_list(
 
 async def _dhcp_settings_get(client: OPNsenseClient) -> dict[str, Any]:
     try:
-        return await client.get("dhcpv4/settings/get")
+        return await client.get("kea/dhcpv4/get")
     except OPNsenseAPIError as exc:
         raise ToolError.from_api_error(exc) from exc
 
 
 async def _dhcp_static_list(client: OPNsenseClient) -> dict[str, Any]:
     try:
-        return await client.get("dhcpv4/settings/searchStaticMap")
+        return await client.get("kea/dhcpv4/searchReservation")
     except OPNsenseAPIError as exc:
         raise ToolError.from_api_error(exc) from exc
 

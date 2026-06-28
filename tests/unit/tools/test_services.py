@@ -11,7 +11,7 @@ from opnsense_mcp.tools.services import (
     _service_stop,
 )
 
-VALID_MODULES = ["unbound", "dhcpv4", "firmware", "ids", "cron"]
+VALID_MODULES = ["unbound", "kea", "firmware", "ids", "cron"]
 
 
 class TestSupportedModules:
@@ -48,8 +48,8 @@ class TestServiceStatus:
 class TestServiceStart:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
         mock_client.post.return_value = {"response": "OK"}
-        result = await _service_start(mock_client, module="dhcpv4")
-        mock_client.post.assert_called_once_with("dhcpv4/service/start", None)
+        result = await _service_start(mock_client, module="kea")
+        mock_client.post.assert_called_once_with("kea/service/start", None)
         assert result["response"] == "OK"
 
     async def test_unknown_module_raises_tool_error_before_http(

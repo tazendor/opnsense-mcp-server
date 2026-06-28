@@ -8,7 +8,7 @@ from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 
 SUPPORTED_MODULES: frozenset[str] = frozenset(
-    {"unbound", "dhcpv4", "firmware", "ids", "cron"}
+    {"unbound", "kea", "firmware", "ids", "cron"}
 )
 
 
@@ -56,23 +56,23 @@ def register_tools(mcp: FastMCP, client: OPNsenseClient) -> None:
     @mcp.tool()
     async def service_status(module: str) -> dict[str, Any]:
         """Retrieve the running/stopped status of a core OPNsense service.
-        Supported modules: unbound, dhcpv4, firmware, ids, cron."""
+        Supported modules: unbound, kea, firmware, ids, cron."""
         return await _service_status(client, module)
 
     @mcp.tool()
     async def service_start(module: str) -> dict[str, Any]:
         """Start a core OPNsense service. Has no effect if already running.
-        Supported modules: unbound, dhcpv4, firmware, ids, cron."""
+        Supported modules: unbound, kea, firmware, ids, cron."""
         return await _service_start(client, module)
 
     @mcp.tool()
     async def service_stop(module: str) -> dict[str, Any]:
         """Stop a core OPNsense service. Has no effect if already stopped.
-        Supported modules: unbound, dhcpv4, firmware, ids, cron."""
+        Supported modules: unbound, kea, firmware, ids, cron."""
         return await _service_stop(client, module)
 
     @mcp.tool()
     async def service_restart(module: str) -> dict[str, Any]:
         """Restart a core OPNsense service, applying any pending configuration.
-        Supported modules: unbound, dhcpv4, firmware, ids, cron."""
+        Supported modules: unbound, kea, firmware, ids, cron."""
         return await _service_restart(client, module)

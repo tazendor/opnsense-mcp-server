@@ -1,9 +1,6 @@
-from collections.abc import AsyncGenerator
-
 import pytest
 
 from opnsense_mcp.client import OPNsenseClient
-from opnsense_mcp.config import Config
 from opnsense_mcp.tools.routes import (
     _route_add,
     _route_apply,
@@ -11,13 +8,6 @@ from opnsense_mcp.tools.routes import (
     _route_list,
 )
 from opnsense_mcp.tools.services import _service_status
-
-
-@pytest.fixture
-async def live_client() -> AsyncGenerator[OPNsenseClient, None]:
-    config = Config.load()
-    async with OPNsenseClient(config) as client:
-        yield client
 
 
 @pytest.mark.integration
@@ -58,8 +48,8 @@ class TestServiceStatusIntegration:
         result = await _service_status(live_client, module="unbound")
         assert "status" in result
 
-    async def test_dhcpv4_status_returns_status_key(
+    async def test_kea_status_returns_status_key(
         self, live_client: OPNsenseClient
     ) -> None:
-        result = await _service_status(live_client, module="dhcpv4")
+        result = await _service_status(live_client, module="kea")
         assert "status" in result

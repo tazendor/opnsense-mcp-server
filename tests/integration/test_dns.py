@@ -1,9 +1,6 @@
-from collections.abc import AsyncGenerator
-
 import pytest
 
 from opnsense_mcp.client import OPNsenseClient
-from opnsense_mcp.config import Config
 from opnsense_mcp.tools.dns import (
     _dns_apply,
     _dns_host_override_add,
@@ -11,13 +8,6 @@ from opnsense_mcp.tools.dns import (
     _dns_host_override_list,
     _dns_settings_get,
 )
-
-
-@pytest.fixture
-async def live_client() -> AsyncGenerator[OPNsenseClient, None]:
-    config = Config.load()
-    async with OPNsenseClient(config) as client:
-        yield client
 
 
 @pytest.mark.integration

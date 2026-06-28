@@ -19,7 +19,7 @@ class TestDhcpLeaseList:
         }
         await _dhcp_lease_list(mock_client)
         mock_client.post.assert_called_once_with(
-            "dhcpv4/leases/searchLease",
+            "kea/leases4/search",
             {"current": 1, "rowCount": -1, "searchPhrase": "", "inactive": 0},
         )
 
@@ -39,7 +39,7 @@ class TestDhcpSettingsGet:
     async def test_calls_correct_endpoint(self, mock_client: AsyncMock) -> None:
         mock_client.get.return_value = {"dhcp": {"lan": {"range": {}}}}
         result = await _dhcp_settings_get(mock_client)
-        mock_client.get.assert_called_once_with("dhcpv4/settings/get")
+        mock_client.get.assert_called_once_with("kea/dhcpv4/get")
         assert result == {"dhcp": {"lan": {"range": {}}}}
 
     async def test_returns_response_unchanged(self, mock_client: AsyncMock) -> None:
@@ -55,7 +55,7 @@ class TestDhcpStaticList:
             "total": 1,
         }
         result = await _dhcp_static_list(mock_client)
-        mock_client.get.assert_called_once_with("dhcpv4/settings/searchStaticMap")
+        mock_client.get.assert_called_once_with("kea/dhcpv4/searchReservation")
         assert "rows" in result
 
     async def test_returns_response_unchanged(self, mock_client: AsyncMock) -> None:
