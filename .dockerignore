@@ -1,0 +1,16 @@
+.git
+.claude
+.specify
+specs
+.venv
+__pycache__
+*.pyc
+*.pyo
+dist
+build
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+CLAUDE.md
+sync-public.sh

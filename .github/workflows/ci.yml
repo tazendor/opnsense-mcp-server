@@ -17,3 +17,10 @@ jobs:
       - run: uv run ruff format --check src/ tests/
       - run: uv run mypy --strict src/
       - run: uv run pytest -m "not integration" -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - run: docker build .

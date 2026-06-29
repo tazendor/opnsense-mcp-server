@@ -182,6 +182,63 @@ The server binds at `http://<HTTP_HOST>:<HTTP_PORT>/mcp`. With the defaults abov
 
 **Other MCP clients** — connect to `http://127.0.0.1:8000/mcp` using the [MCP Streamable HTTP](https://modelcontextprotocol.io/docs/concepts/transports#streamable-http) transport. The server follows the standard MCP session handshake: send an `initialize` request, then a `notifications/initialized` notification (both carrying the `mcp-session-id` header returned by the server), then issue tool calls.
 
+## Docker
+
+The server ships with a production-ready Docker image built on `python:3.12-slim-bookworm`. Dependencies are installed in the build stage via `uv`, then only the `.venv` is copied to the runtime stage — no build tooling in the final image. The container runs as a non-root user (`uid 1000`).
+
+### Build
+
+```bash
+docker build -t opnsense-mcp .
+```
+
+### Run with Docker Compose (recommended)
+
+Copy `.env.example` to `.env` and fill in your credentials:
+
+```bash
+cp .env.example .env
+# edit .env
+docker compose up -d
+```
+
+The server listens on `http://127.0.0.1:8000/mcp`. The compose file binds only to `127.0.0.1` — to expose on a LAN, change the `ports` entry and put a reverse proxy in front for auth.
+
+### Run without Compose
+
+```bash
+docker run -d \
+  --name opnsense-mcp \
+  -p 127.0.0.1:8000:8000 \
+  --env-file .env \
+  --read-only --tmpfs /tmp \
+  --cap-drop ALL \
+  --security-opt no-new-privileges:true \
+  opnsense-mcp
+```
+
+### stdio via Docker
+
+You can run the server in stdio mode so that a client such as Claude Desktop or Claude Code spawns it as a subprocess:
+
+```json
+{
+  "mcpServers": {
+    "opnsense": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "--env-file", "/path/to/.env",
+        "opnsense-mcp",
+        "opnsense-mcp"
+      ]
+    }
+  }
+}
+```
+
+The `-i` flag keeps stdin open so the MCP protocol can flow through it. Omit `-p` — no port is needed in stdio mode.
+
 ## Development
 
 ```bash
