@@ -165,8 +165,10 @@ The server binds at `http://<HTTP_HOST>:<HTTP_PORT>/mcp`. With the defaults abov
 
 > **Security**: HTTP mode does not enforce payload size limits, rate limiting, or
 > client authentication. The server prints a warning to this effect at startup.
-> For anything beyond local use, place the server behind a reverse proxy (nginx,
-> Caddy, etc.) that adds those controls and restricts access to trusted clients.
+> For anything beyond local use, place the server behind a reverse proxy that adds
+> those controls. A `Caddyfile.example` is included in the repository — copy it
+> to `Caddyfile`, replace the placeholders, and run `caddy run`. It configures
+> HTTP Basic auth, a 1 MB request body limit, and per-IP rate limiting.
 
 **Claude Code** — add to `.mcp.json`:
 
@@ -264,9 +266,9 @@ All unit and contract tests pass without a live OPNsense instance (`pytest -m "n
 
 - **HTTPS enforced**: the server refuses to start with an `http://` URL.
 - **Credentials never logged**: `api_key` and `api_secret` flow only into the HTTP `Authorization` header and are absent from all log output.
-- **Structured audit log**: every OPNsense API call is logged to stderr as a JSON line with stable fields — `ts` (UTC ISO-8601), `method`, `path`, `status_code`, `outcome`. Example:
+- **Structured audit log**: every OPNsense API call is logged to stderr as a JSON line with stable fields — `ts` (UTC ISO-8601), `req_id` (UUID v4 per request), `method`, `path`, `status_code`, `outcome`. Example:
   ```json
-  {"ts":"2026-06-28T12:00:00+00:00","method":"GET","path":"core/system/status","status_code":200,"outcome":"success"}
+  {"ts":"2026-06-28T12:00:00+00:00","req_id":"a3f1c2d4-...","method":"GET","path":"core/system/status","status_code":200,"outcome":"success"}
   ```
 - **Input validation**: UUID and alias-name parameters are validated against strict allowlist patterns before being interpolated into API paths, preventing path-traversal attempts.
 - **TLS verification warning**: when `OPNSENSE_VERIFY_TLS=false`, a warning is printed at startup.

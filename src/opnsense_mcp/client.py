@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -60,9 +61,11 @@ class OPNsenseClient:
         path: str,
         status_code: int | None,
         outcome: str,
+        req_id: str,
     ) -> None:
         record = {
             "ts": datetime.now(UTC).isoformat(),
+            "req_id": req_id,
             "method": method,
             "path": path.replace("\r", "").replace("\n", " "),
             "status_code": status_code,
@@ -71,20 +74,21 @@ class OPNsenseClient:
         print(json.dumps(record), file=sys.stderr, flush=True)
 
     async def get(self, path: str) -> dict[str, Any]:
+        req_id = str(uuid.uuid4())
         try:
             response = await self._client.get(f"/api/{path}")
         except httpx.ConnectTimeout as exc:
-            self._log("GET", path, None, "timeout")
+            self._log("GET", path, None, "timeout", req_id)
             raise ToolError(f"Connect timeout exceeded for {path}") from exc
         except httpx.ReadTimeout as exc:
-            self._log("GET", path, None, "timeout")
+            self._log("GET", path, None, "timeout", req_id)
             raise ToolError(f"Read timeout exceeded for {path}") from exc
         except httpx.ConnectError as exc:
-            self._log("GET", path, None, "error")
+            self._log("GET", path, None, "error", req_id)
             raise ToolError(f"Could not connect to OPNsense for {path}") from exc
 
         if response.is_error:
-            self._log("GET", path, response.status_code, "error")
+            self._log("GET", path, response.status_code, "error", req_id)
             raise OPNsenseAPIError(
                 status_code=response.status_code,
                 body=_safe_json(response),
@@ -92,25 +96,26 @@ class OPNsenseClient:
                 method="GET",
             )
 
-        self._log("GET", path, response.status_code, "success")
+        self._log("GET", path, response.status_code, "success", req_id)
         result: dict[str, Any] = response.json()
         return result
 
     async def get_list(self, path: str) -> list[dict[str, Any]]:
+        req_id = str(uuid.uuid4())
         try:
             response = await self._client.get(f"/api/{path}")
         except httpx.ConnectTimeout as exc:
-            self._log("GET", path, None, "timeout")
+            self._log("GET", path, None, "timeout", req_id)
             raise ToolError(f"Connect timeout exceeded for {path}") from exc
         except httpx.ReadTimeout as exc:
-            self._log("GET", path, None, "timeout")
+            self._log("GET", path, None, "timeout", req_id)
             raise ToolError(f"Read timeout exceeded for {path}") from exc
         except httpx.ConnectError as exc:
-            self._log("GET", path, None, "error")
+            self._log("GET", path, None, "error", req_id)
             raise ToolError(f"Could not connect to OPNsense for {path}") from exc
 
         if response.is_error:
-            self._log("GET", path, response.status_code, "error")
+            self._log("GET", path, response.status_code, "error", req_id)
             raise OPNsenseAPIError(
                 status_code=response.status_code,
                 body=_safe_json(response),
@@ -118,25 +123,26 @@ class OPNsenseClient:
                 method="GET",
             )
 
-        self._log("GET", path, response.status_code, "success")
+        self._log("GET", path, response.status_code, "success", req_id)
         result: list[dict[str, Any]] = response.json()
         return result
 
     async def get_text(self, path: str) -> str:
+        req_id = str(uuid.uuid4())
         try:
             response = await self._client.get(f"/api/{path}")
         except httpx.ConnectTimeout as exc:
-            self._log("GET", path, None, "timeout")
+            self._log("GET", path, None, "timeout", req_id)
             raise ToolError(f"Connect timeout exceeded for {path}") from exc
         except httpx.ReadTimeout as exc:
-            self._log("GET", path, None, "timeout")
+            self._log("GET", path, None, "timeout", req_id)
             raise ToolError(f"Read timeout exceeded for {path}") from exc
         except httpx.ConnectError as exc:
-            self._log("GET", path, None, "error")
+            self._log("GET", path, None, "error", req_id)
             raise ToolError(f"Could not connect to OPNsense for {path}") from exc
 
         if response.is_error:
-            self._log("GET", path, response.status_code, "error")
+            self._log("GET", path, response.status_code, "error", req_id)
             raise OPNsenseAPIError(
                 status_code=response.status_code,
                 body=_safe_json(response),
@@ -144,26 +150,27 @@ class OPNsenseClient:
                 method="GET",
             )
 
-        self._log("GET", path, response.status_code, "success")
+        self._log("GET", path, response.status_code, "success", req_id)
         return response.text
 
     async def post(
         self, path: str, data: dict[str, Any] | None = None
     ) -> dict[str, Any]:
+        req_id = str(uuid.uuid4())
         try:
             response = await self._client.post(f"/api/{path}", json=data)
         except httpx.ConnectTimeout as exc:
-            self._log("POST", path, None, "timeout")
+            self._log("POST", path, None, "timeout", req_id)
             raise ToolError(f"Connect timeout exceeded for {path}") from exc
         except httpx.ReadTimeout as exc:
-            self._log("POST", path, None, "timeout")
+            self._log("POST", path, None, "timeout", req_id)
             raise ToolError(f"Read timeout exceeded for {path}") from exc
         except httpx.ConnectError as exc:
-            self._log("POST", path, None, "error")
+            self._log("POST", path, None, "error", req_id)
             raise ToolError(f"Could not connect to OPNsense for {path}") from exc
 
         if response.is_error:
-            self._log("POST", path, response.status_code, "error")
+            self._log("POST", path, response.status_code, "error", req_id)
             raise OPNsenseAPIError(
                 status_code=response.status_code,
                 body=_safe_json(response),
@@ -171,7 +178,7 @@ class OPNsenseClient:
                 method="POST",
             )
 
-        self._log("POST", path, response.status_code, "success")
+        self._log("POST", path, response.status_code, "success", req_id)
         result: dict[str, Any] = response.json()
         return result
 

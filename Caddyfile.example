@@ -1,0 +1,50 @@
+# Caddyfile.example — reverse proxy hardening for opnsense-mcp HTTP transport
+#
+# Copy to Caddyfile and edit the placeholders before use.
+# Requires Caddy v2 with the rate-limit module (xcaddy build --with github.com/mholt/caddy-ratelimit).
+# For basic Caddy without plugins, remove the rate_limit block.
+#
+# Usage:
+#   caddy run --config Caddyfile
+
+{
+    # Disable the admin endpoint in production
+    admin off
+}
+
+mcp.example.internal {
+    # TLS — Caddy auto-provisions certs for public domains via ACME.
+    # For internal hostnames use a local CA or supply your own cert:
+    #   tls /etc/caddy/cert.pem /etc/caddy/key.pem
+
+    # Require HTTP Basic auth before forwarding any request.
+    # Generate the password hash with: caddy hash-password --plaintext 'yourpassword'
+    basicauth * {
+        mcpclient $2a$14$...replace_with_caddy_hash-password_output...
+    }
+
+    # Enforce a maximum request body size (protects against large payload attacks).
+    request_body {
+        max_size 1MB
+    }
+
+    # Rate limit: allow 60 requests per minute per IP.
+    # Remove this block if caddy-ratelimit is not available.
+    rate_limit {
+        zone dynamic {
+            key    {remote_host}
+            events 60
+            window 1m
+        }
+    }
+
+    # Strip sensitive headers before forwarding.
+    header_up -X-Forwarded-For
+    header_up -X-Real-IP
+
+    # Proxy only the /mcp path to the MCP server.
+    reverse_proxy /mcp* localhost:8000
+
+    # Reject all other paths.
+    respond 404
+}

@@ -91,7 +91,8 @@ class TestGetLogging:
 
         err = capsys.readouterr().err.strip()
         parsed = json.loads(err)
-        assert {"ts", "method", "path", "status_code", "outcome"} <= parsed.keys()
+        required = {"ts", "req_id", "method", "path", "status_code", "outcome"}
+        assert required <= parsed.keys()
 
 
 class TestPostLogging:
