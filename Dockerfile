@@ -4,15 +4,13 @@ FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies before copying source so this layer is cached when only
-# source changes.
+# Copy manifest files first so the dependency layer is cached independently
+# of source changes.
+COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-dev --no-install-project
 
 COPY src/ ./src/
-
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 

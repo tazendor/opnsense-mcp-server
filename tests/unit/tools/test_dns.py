@@ -115,9 +115,7 @@ class TestDnsHostOverrideUpdate:
         with pytest.raises(ToolError):
             await _dns_host_override_update(mock_client, uuid=UUID_DNS, host={})
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _dns_host_override_update(mock_client, uuid=INVALID_UUID, host={})
         mock_client.post.assert_not_called()
@@ -144,9 +142,7 @@ class TestDnsHostOverrideDelete:
         with pytest.raises(ToolError):
             await _dns_host_override_delete(mock_client, uuid=UUID_DNS)
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _dns_host_override_delete(mock_client, uuid=INVALID_UUID)
         mock_client.post.assert_not_called()

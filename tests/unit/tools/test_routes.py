@@ -99,9 +99,7 @@ class TestRouteUpdate:
         with pytest.raises(ToolError):
             await _route_update(mock_client, uuid=UUID_ROUTE, route={})
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _route_update(mock_client, uuid=INVALID_UUID, route={})
         mock_client.post.assert_not_called()
@@ -128,9 +126,7 @@ class TestRouteDelete:
         with pytest.raises(ToolError):
             await _route_delete(mock_client, uuid=UUID_ROUTE)
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _route_delete(mock_client, uuid=INVALID_UUID)
         mock_client.post.assert_not_called()

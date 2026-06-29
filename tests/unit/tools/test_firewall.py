@@ -56,9 +56,7 @@ class TestFirewallRuleGet:
     async def test_calls_endpoint_with_uuid(self, mock_client: AsyncMock) -> None:
         mock_client.get.return_value = {"rule": {"action": "pass"}}
         result = await _rule_get(mock_client, uuid=UUID_RULE)
-        mock_client.get.assert_called_once_with(
-            f"firewall/filter/get_rule/{UUID_RULE}"
-        )
+        mock_client.get.assert_called_once_with(f"firewall/filter/get_rule/{UUID_RULE}")
         assert "rule" in result
 
     async def test_api_error_surfaced_as_tool_error(
@@ -74,9 +72,7 @@ class TestFirewallRuleGet:
             await _rule_get(mock_client, uuid=UUID_RULE)
         assert "404" in str(exc_info.value)
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _rule_get(mock_client, uuid=INVALID_UUID)
         mock_client.get.assert_not_called()
@@ -143,9 +139,7 @@ class TestFirewallRuleUpdate:
         with pytest.raises(ToolError):
             await _rule_update(mock_client, uuid=UUID_RULE, rule={})
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _rule_update(mock_client, uuid=INVALID_UUID, rule={})
         mock_client.post.assert_not_called()
@@ -172,9 +166,7 @@ class TestFirewallRuleDelete:
         with pytest.raises(ToolError):
             await _rule_delete(mock_client, uuid=UUID_RULE)
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _rule_delete(mock_client, uuid=INVALID_UUID)
         mock_client.post.assert_not_called()
@@ -210,9 +202,7 @@ class TestFirewallAliasGetUuid:
         result = await _alias_get_uuid(mock_client, name="Unknown")
         assert result["uuid"] == ""
 
-    async def test_invalid_name_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_name_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid alias name"):
             await _alias_get_uuid(mock_client, name="../../etc/passwd")
         mock_client.get.assert_not_called()
@@ -251,9 +241,7 @@ class TestFirewallAliasUpdate:
             f"firewall/alias/set_item/{UUID_ALIAS}", {"alias": alias}
         )
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _alias_update(mock_client, uuid=INVALID_UUID, alias={})
         mock_client.post.assert_not_called()
@@ -268,9 +256,7 @@ class TestFirewallAliasDelete:
         )
         assert result["result"] == "deleted"
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _alias_delete(mock_client, uuid=INVALID_UUID)
         mock_client.post.assert_not_called()
@@ -326,9 +312,7 @@ class TestFirewallNatUpdate:
             f"firewall/d_nat/setrule/{UUID_NAT}", {"rule": rule}
         )
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _nat_update(mock_client, uuid=INVALID_UUID, rule={})
         mock_client.post.assert_not_called()
@@ -343,9 +327,7 @@ class TestFirewallNatDelete:
         )
         assert result["result"] == "deleted"
 
-    async def test_invalid_uuid_raises_tool_error(
-        self, mock_client: AsyncMock
-    ) -> None:
+    async def test_invalid_uuid_raises_tool_error(self, mock_client: AsyncMock) -> None:
         with pytest.raises(ToolError, match="Invalid UUID"):
             await _nat_delete(mock_client, uuid=INVALID_UUID)
         mock_client.post.assert_not_called()
