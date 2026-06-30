@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # ── builder ──────────────────────────────────────────────────────────────────
-# ghcr.io/astral-sh/uv:python3.12-bookworm-slim
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim@sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58 AS builder
+# ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim@sha256:7cf77f594be8042dab6daa9fe326f90962252268b4f120a7f5dccce4d947e6c1 AS builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
 # ── runtime ───────────────────────────────────────────────────────────────────
-# python:3.12-slim-bookworm
+# python:3.14-slim-bookworm
 FROM python:3.14-slim-bookworm@sha256:4ff4b92a68355dbdb52584ab3391dff8d371a61d4e063468bfd0130e3189c6d9
 
 RUN useradd --create-home --uid 1000 --shell /bin/sh appuser
