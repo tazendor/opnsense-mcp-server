@@ -19,7 +19,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv build
-      - uses: anchore/sbom-action@fe95a3eb344f6d7291f97ba35437519784093fdb  # v0.24.0
+      - uses: anchore/sbom-action@26ca99d710488389d655c50441b85fbf22179c0b  # v0.24.0
         with:
           artifact-name: sbom
           output-file: sbom.spdx.json
