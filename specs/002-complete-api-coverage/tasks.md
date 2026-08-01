@@ -12,11 +12,11 @@ description: "Task list for Complete OPNsense API Coverage (Read-Write)"
 implementation task is preceded by a test task. Tests MUST fail before implementation
 begins.
 
-**Two open items requiring spec owner sign-off** before their tasks are considered
-done (not just implemented) — see `research.md` "Discovered Spec Conflicts": T0xx
-(`system_config_restore`, narrowed to existing-backup-revision restore) and T0xx
-(`interface_assignment_update/_delete`, "disable" dropped from scope). Both are marked
-below.
+**Two scope narrowings — SIGNED OFF 2026-08-01** (spec owner, recorded in spec.md
+Clarifications): `system_config_restore` narrowed to reverting an existing on-box backup
+revision, and interface ops narrowed to reassignment only (enable/disable dropped). The
+affected tasks (T053/T054, T056) are cleared to proceed as designed; T061 (which tracked
+obtaining the sign-off) is done.
 
 ## Format: `[ID] [P?] [Story?] Description`
 
@@ -243,8 +243,8 @@ is not contacted until confirmed; confirm and verify exactly one request is sent
 
 **Depends entirely on Phase 4** — every tool in this phase is high-risk.
 
-**⚠️ Two tasks below require spec owner sign-off before being marked done** (narrowed
-scope vs. the literal spec text — see `research.md`).
+**✅ Scope narrowings for this phase were signed off 2026-08-01** (see spec.md
+Clarifications) — the two tasks previously flagged are cleared to proceed as designed.
 
 ### System
 
@@ -252,8 +252,8 @@ scope vs. the literal spec text — see `research.md`).
 - [ ] T050 [US6] Implement `system_reboot`/`system_halt` in `src/opnsense_mcp/tools/system.py`, gated via `PendingOperationStore` — the representative case for the whole confirm-then-execute mechanism (spec's own US2 Independent Test)
 - [ ] T051 [P] [US6] Write failing unit tests for `system_firmware_check`, `_update`, `_upgrade`, `_upgrade_status`, `_log` in `tests/unit/tools/test_system.py`, asserting `_update`/`_upgrade` require `confirm`
 - [ ] T052 [US6] Implement firmware tools in `src/opnsense_mcp/tools/system.py`
-- [ ] T053 [P] [US6] **[needs spec owner sign-off — research.md conflict #1]** Write failing unit tests for `system_config_restore` (narrowed to restoring an existing backup revision via `core/backup/revert_backup`, preview built from `core/backup/diff`) and `system_config_backup_list` in `tests/unit/tools/test_system.py`
-- [ ] T054 [US6] **[needs spec owner sign-off]** Implement `system_config_restore`/`_backup_list` in `src/opnsense_mcp/tools/system.py`, gated via `PendingOperationStore`
+- [ ] T053 [P] [US6] **[scope signed off 2026-08-01]** Write failing unit tests for `system_config_restore` (reverting to an existing backup revision via `core/backup/revert_backup`, preview built from `core/backup/diff`) and `system_config_backup_list` in `tests/unit/tools/test_system.py`
+- [ ] T054 [US6] **[scope signed off 2026-08-01]** Implement `system_config_restore`/`_backup_list` in `src/opnsense_mcp/tools/system.py`, gated via `PendingOperationStore`
 
 **Checkpoint**: `pytest tests/unit/tools/test_system.py` all pass; `mypy --strict`/`ruff`
 clean.
@@ -261,7 +261,7 @@ clean.
 ### Interfaces
 
 - [ ] T055 [P] [US6] Write failing unit tests in `tests/unit/tools/test_interfaces.py` for `interface_assignment_list/_get/_add` (standard risk) and `_update`/`_delete` (require `confirm`) and `interface_apply`
-- [ ] T056 [US6] **[needs spec owner sign-off — research.md conflict #2, "disable" dropped from scope]** Implement assignment tools in `src/opnsense_mcp/tools/interfaces.py` per `contracts/interfaces.md`, `_update`/`_delete` gated via `PendingOperationStore`
+- [ ] T056 [US6] **[scope signed off 2026-08-01 — reassignment only, "disable" dropped]** Implement assignment tools in `src/opnsense_mcp/tools/interfaces.py` per `contracts/interfaces.md`, `_update`/`_delete` gated via `PendingOperationStore`
 
 **Checkpoint**: `pytest tests/unit/tools/test_interfaces.py` all pass; `mypy --strict`/`ruff`
 clean. Wire `system.py`'s new tools and `interfaces.py`'s new tools (already registered
@@ -276,7 +276,7 @@ module) into `server.py`.
 - [ ] T058 Run the Phase 2 contract-completeness scanner (`tests/contract/test_tool_schemas.py`) across the full ~222-tool surface; fix any straggling contract gaps
 - [ ] T059 [P] Regenerate `docs/mcp-tools.md` (the cross-cutting tool inventory started before this plan) to include every domain added in this feature, with the same read/write-type table format already established
 - [ ] T060 Full quality gate: `uv run pytest` (unit, excluding integration), `uv run mypy --strict src/`, `uv run ruff check .`, `uv run ruff format --check .` — all clean
-- [ ] T061 Confirm spec owner sign-off obtained for both flagged scope narrowings (T053/T054 config restore, T056 interface disable) — update `spec.md`'s FR-018/US6 AC2/AC4 text to match the shipped scope once agreed, rather than leaving the literal text unresolved
+- [x] T061 Spec owner sign-off obtained 2026-08-01 for both scope narrowings (config restore → backup-revision revert; interface ops → reassignment only); `spec.md`'s Clarifications, FR-007, FR-018, US6 AC2/AC4, and Assumptions updated to match the shipped scope
 - [ ] T062 Walk through `quickstart.md` end-to-end against a live (non-production) OPNsense instance, one section per user story
 
 ---
@@ -335,7 +335,7 @@ Task: "T029 — WireGuard server/client tests in tests/unit/tools/test_wireguard
 - Phase 5 → US3 ships (VPN) → v0.4.0
 - Phase 6 → US4 ships (Proxy/Captive Portal) → v0.5.0
 - Phase 7 → US5 ships (Certificates) → v0.6.0
-- Phase 8 → US6 ships (high-risk system ops) → v1.0.0, pending the two sign-offs
+- Phase 8 → US6 ships (high-risk system ops) → v1.0.0 (the two scope narrowings are signed off)
 - Phase 9 → Polish → v1.0.0 production-ready
 
 ### TDD Cycle Per Phase (mandatory)
@@ -358,5 +358,5 @@ Task: "T029 — WireGuard server/client tests in tests/unit/tools/test_wireguard
 - `mypy --strict src/` MUST pass at every phase checkpoint (Principle III)
 - `ruff check` MUST pass at every phase checkpoint (Principle II)
 - Stop at any checkpoint to validate the story independently before advancing
-- T053/T054/T056 are implementable as designed (narrowed scope), but should not be
-  considered spec-complete until the sign-off in T061 happens
+- T053/T054/T056 are cleared to proceed as designed — the narrowed scope was signed
+  off 2026-08-01 (T061), and spec.md now matches
