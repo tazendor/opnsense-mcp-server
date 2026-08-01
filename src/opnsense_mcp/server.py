@@ -21,6 +21,7 @@ from opnsense_mcp.tools import (
     routes,
     services,
     system,
+    trust,
     wireguard,
 )
 
@@ -61,4 +62,5 @@ def create_server(config: Config, client: OPNsenseClient | None = None) -> FastM
     ipsec.register_tools(mcp, client, store)
     wireguard.register_tools(mcp, client, store)
     captiveportal.register_tools(mcp, client, store)
+    trust.register_tools(mcp, client, store)
     return mcp
