@@ -83,3 +83,58 @@ class TestSystemConfigBackup:
         with pytest.raises(ToolError) as exc_info:
             await _system_config_backup(mock_client)
         assert "403" in str(exc_info.value)
+
+
+class TestSystemHighRisk:
+    """FR-018: reboot/halt/firmware/config-restore are confirmation-gated.
+    The scanner separately confirms all 12 system tools are documented."""
+
+    @staticmethod
+    def _fn(mock_client: AsyncMock, name: str, store: object):  # type: ignore[no-untyped-def]
+        from mcp.server.fastmcp import FastMCP
+
+        from opnsense_mcp.tools import system
+
+        mcp = FastMCP("t")
+        system.register_tools(mcp, mock_client, store)
+        return mcp._tool_manager._tools[name].fn
+
+    async def test_reboot_preview_no_post(self, mock_client: AsyncMock) -> None:
+        from opnsense_mcp.confirmation import PendingOperationStore
+
+        fn = self._fn(mock_client, "system_reboot", PendingOperationStore())
+        result = await fn()
+        assert result["status"] == "confirmation_required"
+        mock_client.post.assert_not_called()
+
+    async def test_reboot_confirmed_posts_once(self, mock_client: AsyncMock) -> None:
+        from opnsense_mcp.confirmation import PendingOperationStore
+
+        store = PendingOperationStore()
+        fn = self._fn(mock_client, "system_reboot", store)
+        preview = await fn()
+        mock_client.post.return_value = {"status": "ok"}
+        await fn(confirm=preview["confirm_token"])
+        mock_client.post.assert_called_once_with(
+            "core/system/reboot", None, token=preview["confirm_token"]
+        )
+
+    async def test_config_restore_gated_and_scoped(
+        self, mock_client: AsyncMock
+    ) -> None:
+        from opnsense_mcp.confirmation import PendingOperationStore
+
+        store = PendingOperationStore()
+        fn = self._fn(mock_client, "system_config_restore", store)
+        result = await fn(backup="config-2026.xml")
+        assert result["status"] == "confirmation_required"
+        assert "config-2026.xml" in result["description"]
+        mock_client.post.assert_not_called()
+
+    async def test_firmware_check_is_standard(self, mock_client: AsyncMock) -> None:
+        from opnsense_mcp.confirmation import PendingOperationStore
+
+        mock_client.post.return_value = {"status": "ok"}
+        fn = self._fn(mock_client, "system_firmware_check", PendingOperationStore())
+        await fn()
+        mock_client.post.assert_called_once_with("core/firmware/check", None)

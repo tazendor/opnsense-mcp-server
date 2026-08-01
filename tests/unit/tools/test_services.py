@@ -12,6 +12,17 @@ from opnsense_mcp.tools.services import (
 )
 
 VALID_MODULES = ["unbound", "kea", "ids"]
+# FR-006 (002): reconciled + extended module list.
+EXTENDED_MODULES = [
+    "unbound",
+    "kea",
+    "ids",
+    "openvpn",
+    "ipsec",
+    "wireguard",
+    "proxy",
+    "captiveportal",
+]
 
 
 class TestSupportedModules:
@@ -19,8 +30,15 @@ class TestSupportedModules:
         for module in VALID_MODULES:
             assert module in SUPPORTED_MODULES
 
+    def test_contains_extended_002_modules(self) -> None:
+        for module in EXTENDED_MODULES:
+            assert module in SUPPORTED_MODULES
+
     def test_is_frozenset(self) -> None:
         assert isinstance(SUPPORTED_MODULES, frozenset)
+
+    def test_unknown_module_still_rejected(self, mock_client: AsyncMock) -> None:
+        assert "nginx" not in SUPPORTED_MODULES
 
 
 class TestServiceStatus:

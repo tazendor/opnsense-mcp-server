@@ -22,6 +22,7 @@ class Config:
     transport: Literal["stdio", "http"] = "stdio"
     http_host: str = "127.0.0.1"
     http_port: int = 8000
+    confirm_ttl_seconds: float = 120.0
 
     def __post_init__(self) -> None:
         if not self.url.startswith("https://"):
@@ -36,6 +37,8 @@ class Config:
             raise ValueError("read_timeout must be positive")
         if not (1 <= self.http_port <= 65535):
             raise ValueError("http_port must be 1–65535")
+        if self.confirm_ttl_seconds <= 0:
+            raise ValueError("confirm_ttl_seconds must be positive")
 
     @classmethod
     def from_env(cls) -> Config:
@@ -53,6 +56,7 @@ class Config:
             transport=transport,
             http_host=os.environ.get("OPNSENSE_HTTP_HOST", "127.0.0.1"),
             http_port=int(os.environ.get("OPNSENSE_HTTP_PORT", "8000")),
+            confirm_ttl_seconds=float(os.environ.get("OPNSENSE_CONFIRM_TTL", "120.0")),
         )
 
     @classmethod
@@ -73,6 +77,7 @@ class Config:
             transport=transport,
             http_host=str(raw.get("http_host", "127.0.0.1")),
             http_port=int(raw.get("http_port", 8000)),
+            confirm_ttl_seconds=float(raw.get("confirm_ttl_seconds", 120.0)),
         )
 
     @classmethod
@@ -110,6 +115,14 @@ class Config:
         transport: Literal["stdio", "http"] = (
             "http" if transport_raw == "http" else "stdio"
         )
+        # confirm_ttl uses the env name OPNSENSE_CONFIRM_TTL (not the generic
+        # OPNSENSE_CONFIRM_TTL_SECONDS the field name would imply), per plan.md.
+        confirm_ttl_env = os.environ.get("OPNSENSE_CONFIRM_TTL")
+        confirm_ttl = (
+            float(confirm_ttl_env)
+            if confirm_ttl_env is not None
+            else float(raw.get("confirm_ttl_seconds", 120.0))
+        )
         return cls(
             url=_s("url"),
             api_key=_s("api_key"),
@@ -120,4 +133,5 @@ class Config:
             transport=transport,
             http_host=_s("http_host", "127.0.0.1"),
             http_port=_i("http_port", 8000),
+            confirm_ttl_seconds=confirm_ttl,
         )

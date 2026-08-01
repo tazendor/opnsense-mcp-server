@@ -222,3 +222,53 @@ class TestConfigLoad:
         monkeypatch.setenv("OPNSENSE_API_SECRET", "secret")
         cfg = Config.load(toml_path=None)
         assert cfg.url == "https://192.168.1.1"
+
+
+class TestConfirmTtlConfig:
+    """FR-010 / plan.md: OPNSENSE_CONFIRM_TTL bounds how long a pending high-risk
+    confirmation stays valid."""
+
+    def test_default_confirm_ttl(self) -> None:
+        cfg = Config(url="https://192.168.1.1", api_key="key", api_secret="secret")
+        assert cfg.confirm_ttl_seconds == 120.0
+
+    def test_rejects_non_positive_confirm_ttl(self) -> None:
+        with pytest.raises(ValueError, match="confirm_ttl_seconds"):
+            Config(
+                url="https://192.168.1.1",
+                api_key="key",
+                api_secret="secret",
+                confirm_ttl_seconds=0.0,
+            )
+
+    def test_loads_confirm_ttl_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("OPNSENSE_URL", "https://192.168.1.1")
+        monkeypatch.setenv("OPNSENSE_API_KEY", "key")
+        monkeypatch.setenv("OPNSENSE_API_SECRET", "secret")
+        monkeypatch.setenv("OPNSENSE_CONFIRM_TTL", "30.0")
+        assert Config.from_env().confirm_ttl_seconds == 30.0
+
+    def test_loads_confirm_ttl_from_toml(self, tmp_path: Path) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            'url = "https://192.168.1.1"\n'
+            'api_key = "key"\n'
+            'api_secret = "secret"\n'
+            "confirm_ttl_seconds = 45.0\n"
+        )
+        assert Config.from_toml(config_file).confirm_ttl_seconds == 45.0
+
+    def test_env_overrides_toml_confirm_ttl(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            'url = "https://192.168.1.1"\n'
+            'api_key = "key"\n'
+            'api_secret = "secret"\n'
+            "confirm_ttl_seconds = 45.0\n"
+        )
+        monkeypatch.setenv("OPNSENSE_CONFIRM_TTL", "30.0")
+        for var in ("OPNSENSE_URL", "OPNSENSE_API_KEY", "OPNSENSE_API_SECRET"):
+            monkeypatch.delenv(var, raising=False)
+        assert Config.load(toml_path=config_file).confirm_ttl_seconds == 30.0
