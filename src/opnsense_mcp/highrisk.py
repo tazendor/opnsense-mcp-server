@@ -26,11 +26,11 @@ async def run_high_risk(
 ) -> dict[str, Any]:
     """Gate a high-risk operation behind a confirmation token.
 
-    With ``confirm`` unset: register a pending operation, log the preview (no request
-    to OPNsense), and return the token + human-readable description. With ``confirm`` set:
-    validate/consume the token for this exact ``tool_name`` + ``arguments`` and then call
-    ``execute(token)`` — which issues the real request exactly once, tagging its log
-    record with the token so it correlates to the preview."""
+    Unset ``confirm``: register a pending operation, log the preview (no request to
+    OPNsense), return the token + description. Set ``confirm``: validate/consume the
+    token for this exact ``tool_name`` + ``arguments``, then call ``execute(token)`` —
+    which issues the real request exactly once, tagging its log record with the token so
+    it correlates to the preview."""
     if confirm is None:
         op = store.create(tool_name, arguments, description)
         client.log_preview(tool_name, arguments, op.token)
