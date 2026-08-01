@@ -18,6 +18,21 @@ no-extra-gate assumption, narrowed to non-destructive writes only."
 
 ## Clarifications
 
+### Session 2026-08-01
+
+- Q: The current stable OPNsense REST API has no endpoint that accepts an arbitrary
+  uploaded `config.xml` and restores it (only reverting to a backup revision already
+  present on the box, via `core/backup/revert_backup`). How should "full configuration
+  restore" be scoped? → A: Narrow to reverting to an existing on-box backup revision,
+  gated by the confirm-then-execute mechanism. Arbitrary-XML upload/restore is out of
+  scope (it only exists as a legacy non-API web form).
+- Q: Enabling/disabling an interface (or editing its IP/media config) is not exposed by
+  any current OPNsense REST API and is a deliberate, still-open upstream gap
+  (`opnsense/core#10568`); only physical↔logical reassignment is API-supported. How
+  should "interface reassigned or disabled" be scoped? → A: Support reassignment only,
+  gated by the confirm-then-execute mechanism. Interface enable/disable is dropped from
+  this feature's scope (revisit if/when upstream exposes it).
+
 ### Session 2026-07-31
 
 - Q: OPNsense's certificate and VPN peer/client endpoints can return private key
@@ -204,9 +219,9 @@ mechanism as a trust-impacting, hard-to-reverse action).
 ### User Story 6 - Perform High-Risk System Operations (Priority: P6)
 
 A network administrator uses an AI assistant to perform system-level operations that
-can disrupt the firewall itself: rebooting or halting the device, restoring a full
-configuration backup, triggering a firmware upgrade, and reassigning or disabling a
-network interface.
+can disrupt the firewall itself: rebooting or halting the device, reverting to a
+previous on-box configuration backup revision, triggering a firmware upgrade, and
+reassigning a physical interface to a logical one.
 
 **Why this priority**: These are the highest blast-radius operations in the entire
 API surface — a mistake can make the firewall (and the network behind it)
@@ -215,26 +230,29 @@ confirm-then-execute mechanism being in place first.
 
 **Independent Test**: Request a system reboot; verify the server returns a preview
 and does not contact OPNsense until confirmed; confirm it and verify the reboot
-request is sent exactly once. Equivalent tests apply to halt, config restore,
-firmware upgrade, and interface reassignment/disable.
+request is sent exactly once. Equivalent tests apply to halt, config revision revert,
+firmware upgrade, and interface reassignment.
 
 **Acceptance Scenarios**:
 
 1. **Given** an MCP client requests a system reboot or halt, **When** it has not yet
    confirmed, **Then** no reboot/halt request reaches OPNsense; once confirmed, the
    server sends exactly one request and surfaces OPNsense's response.
-2. **Given** an MCP client submits a full configuration restore (an XML document),
-   **When** it has not yet confirmed, **Then** the server describes what will be
-   overwritten without submitting it; once confirmed, it submits the restore and
-   surfaces the result.
+2. **Given** an MCP client requests reverting to a previous on-box configuration
+   backup revision, **When** it has not yet confirmed, **Then** the server describes
+   what will change (a diff against the current config) without applying it; once
+   confirmed, it performs the revert and surfaces the result. (Restoring an arbitrary
+   externally-supplied `config.xml` is out of scope — see Clarifications 2026-08-01.)
 3. **Given** an MCP client requests a firmware upgrade be triggered, **When** it has
    not yet confirmed, **Then** the server reports the pending version change without
    starting it; once confirmed, it starts the upgrade and surfaces OPNsense's
    response.
-4. **Given** an MCP client requests an interface be reassigned or disabled, **When**
-   it has not yet confirmed, **Then** the server describes the change (including
-   that it may disconnect the current management session) without applying it; once
-   confirmed, it applies the change and surfaces the result.
+4. **Given** an MCP client requests a physical interface be reassigned to a logical
+   interface, **When** it has not yet confirmed, **Then** the server describes the
+   change (including that it may disconnect the current management session) without
+   applying it; once confirmed, it applies the change and surfaces the result.
+   (Enabling/disabling an interface is out of scope — not exposed by the current
+   OPNsense REST API; see Clarifications 2026-08-01.)
 
 ---
 
@@ -255,7 +273,7 @@ firmware upgrade, and interface reassignment/disable.
   The server MUST redact any private key field from the response per FR-017, even
   though the underlying OPNsense endpoint includes it.
 - What happens when an interface reassignment tool is confirmed and executed, and it
-  happens to disable the interface the MCP client itself is connected through? The
+  happens to disconnect the interface the MCP client itself is connected through? The
   server MUST still attempt the operation and report whatever result or error
   OPNsense returns; the server cannot know before the fact which interface carries
   its own management traffic.
@@ -293,8 +311,8 @@ firmware upgrade, and interface reassignment/disable.
 - **FR-007**: The server MUST classify each write operation as either standard
   (proceeds directly, matching 001's existing stage-then-apply behavior) or
   high-risk (requires confirmation). High-risk operations are, at minimum: system
-  reboot/halt, firmware upgrade, full configuration restore, interface reassignment
-  or disable, VPN configuration teardown/disable, certificate revocation, and
+  reboot/halt, firmware upgrade, configuration-revision revert, interface
+  reassignment, VPN configuration teardown/disable, certificate revocation, and
   bulk/zone-wide captive portal disconnect.
 - **FR-008**: For a high-risk operation, the server MUST NOT send the corresponding
   request to OPNsense until the MCP client has completed a distinct confirmation
@@ -331,9 +349,12 @@ firmware upgrade, and interface reassignment/disable.
 
 **High-risk system operations (User Story 6)**
 
-- **FR-018**: The server MUST support system reboot and halt, full configuration
-  restore, firmware upgrade triggering, and interface reassignment/disable, each
-  gated by the confirmation mechanism (FR-008).
+- **FR-018**: The server MUST support system reboot and halt, reverting to an existing
+  on-box configuration backup revision, firmware upgrade triggering, and physical→logical
+  interface reassignment, each gated by the confirmation mechanism (FR-008). Restoring an
+  arbitrary externally-supplied `config.xml`, and enabling/disabling an interface, are
+  out of scope — neither is exposed by the current stable OPNsense REST API (see
+  Clarifications 2026-08-01).
 
 ### Key Entities
 
@@ -375,10 +396,12 @@ firmware upgrade, and interface reassignment/disable.
 ## Assumptions
 
 - This spec supersedes the scope exclusions in 001-opnsense-mcp-server for: DHCP
-  writes, Interface assignment/enable-disable, IDS ruleset writes, VPN, Web Proxy,
-  Captive Portal, and Certificate/PKI. All other assumptions and requirements from
-  001 (HTTPS-only, API key/secret auth, no caching, dual transport, per-call
-  logging, current-stable-release targeting) continue to apply.
+  writes, physical→logical interface reassignment, IDS ruleset writes, VPN, Web Proxy,
+  Captive Portal, and Certificate/PKI. Interface enable/disable and IP/media
+  configuration remain excluded (not exposed by the current OPNsense REST API — see
+  Clarifications 2026-08-01). All other assumptions and requirements from 001
+  (HTTPS-only, API key/secret auth, no caching, dual transport, per-call logging,
+  current-stable-release targeting) continue to apply.
 - "Documented OPNsense REST API" includes the officially maintained plugins bundled
   with a standard OPNsense installation (OpenVPN, IPsec/strongSwan, WireGuard, Squid
   proxy, Captive Portal) — the same standard already applied when 001's IDS support
