@@ -35,7 +35,7 @@ class PendingOperationStore:
         ttl_seconds: float = 120.0,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
-        self._ttl = ttl_seconds
+        self.ttl_seconds = ttl_seconds
         self._clock = clock
         self._pending: dict[str, PendingOperation] = {}
 
@@ -49,7 +49,7 @@ class PendingOperationStore:
             tool_name=tool_name,
             arguments=dict(arguments),
             description=description,
-            expires_at=self._clock() + self._ttl,
+            expires_at=self._clock() + self.ttl_seconds,
         )
         self._pending[op.token] = op
         return op
