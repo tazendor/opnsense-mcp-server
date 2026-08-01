@@ -23,6 +23,9 @@ obtaining the sign-off) is done.
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to ([US1]–[US6])
 - All file paths are relative to the repository root
+- Letter-suffixed IDs (e.g. `T014a`, `T015a`, `T058a`) are tasks inserted after the
+  initial numbering; they sort immediately after their base ID and avoid renumbering the
+  whole list (and every cross-reference to it). Treat them as ordinary sequential tasks.
 
 ---
 
@@ -47,7 +50,13 @@ required before Polish can validate SC-002 across the whole tool surface.
 - [ ] T002 [P] Add failing assertions to `tests/unit/test_config.py`: `OPNSENSE_CONFIRM_TTL` env var parsed as `float` into a new `Config.confirm_ttl_seconds` field, default `120.0` when unset, same env-overrides-TOML precedence as existing fields
 - [ ] T003 [P] Add a failing test to `tests/contract/test_tool_schemas.py`: for every tool name returned by the running server's tool registry, assert a `## Tool: \`<name>\`` (or `### Tool: \`<name>\`` for sub-headings) heading exists somewhere under `specs/001-opnsense-mcp-server/contracts/*.md` or `specs/002-complete-api-coverage/contracts/*.md`, and fail loudly (listing the missing names) if not — this is the automated form of FR-002/SC-002, not just a manual review step
 
-**Checkpoint**: `pytest tests/unit/test_config.py tests/contract/test_tool_schemas.py` — the new assertions MUST report FAILED (the contract-scan test will fail harmlessly here since it only checks already-shipped tools, which already have contracts as of this plan — if it passes immediately, still add it; the RED requirement applies to genuinely new assertions, not this one if it's vacuously green because 001+002's docs already reconcile 001's drift).
+**Checkpoint**: `pytest tests/unit/test_config.py` — the new `confirm_ttl_seconds`
+assertions (T002) MUST report FAILED before T004. The contract scanner (T003→T005) is a
+standing regression gate rather than a RED-then-GREEN test: with the current tool set it is
+expected to **pass** once written, since every shipped tool already has a contract as of
+this plan. Its job is to **fail** later if any new tool in Phases 3–8 is registered without
+a contract entry — so "green now, and stays green only while coverage holds" is the correct
+expected state, not a TDD violation.
 
 ### Implementation for Foundational (GREEN)
 
@@ -94,37 +103,47 @@ an independent increment if desired — no dependency on any later phase.
 ## Phase 4: User Story 2 — Confirm-Then-Execute Safety Layer (Priority: P2)
 
 **Goal**: Build the shared, in-process confirmation mechanism every high-risk tool in
-Phases 5–8 will use (FR-007–FR-011). No MCP tool is owned by this phase itself — it's
-pure infrastructure, exercised directly at the store level so it's independently testable
-without any later phase existing yet (spec's own "Independent Test" describes the
-generic preview→confirm→execute shape, which this phase's unit tests demonstrate
-directly against `PendingOperationStore`, without needing a real tool wired up).
+Phases 5–8 will use (FR-007–FR-011), **including the preview diagnostic record** required
+by FR-011/SC-005. No MCP tool is owned by this phase itself — it's pure infrastructure,
+exercised directly at the store level so it's independently testable without any later
+phase existing yet (spec's own "Independent Test" describes the generic
+preview→confirm→execute shape, which this phase's unit tests demonstrate directly against
+`PendingOperationStore`, without needing a real tool wired up).
 
 **Independent Test**: Directly exercise `PendingOperationStore.create()`/`.consume()`:
 create a pending operation, assert nothing resembling an HTTP call happened; consume it
 with matching tool/arguments and assert it succeeds exactly once; consume again and
 assert it's rejected (single-use); create another, let it expire, assert consuming it is
-rejected.
+rejected. Separately, assert that issuing a preview emits a diagnostic log record marked
+`outcome="preview"` that is distinguishable from the execution record produced by the
+subsequent confirmed call (FR-011/SC-005).
 
-**Also in scope**: the redaction helper (FR-017) — grouped here because, like the
-confirmation store, it's shared safety infrastructure consumed by later phases rather
-than owned by any single one.
+**Also in scope**: (a) the redaction helper (FR-017); (b) the **preview diagnostic
+logging** hook (FR-011/SC-005) — both grouped here because, like the confirmation store,
+they're shared safety infrastructure consumed by later phases rather than owned by any
+single one. SC-005 requires an operator to review preview and confirmed-execution records
+that are distinguishable from each other, from the server's own diagnostic log — so the
+preview record uses the same `OPNsenseClient` logging path as real requests, not the MCP
+client's session history.
 
 ### Tests for User Story 2 (RED)
 
 - [ ] T013 [P] [US2] Write failing unit tests in `tests/unit/test_confirmation.py`: `create()` returns a `PendingOperation` with a unique token, the given description, and an expiry in the future; `consume(token, tool_name, arguments)` with an exact match succeeds and removes the entry (a second `consume()` with the same token then raises `ToolError`); `consume()` with a wrong `tool_name` or different `arguments` (same token) raises `ToolError` without removing the entry's ability to be looked up correctly by its real owner; `consume()` on an unknown token raises `ToolError`; `consume()` on an expired token (use a `ttl_seconds` near zero and a short sleep, or inject a fake clock) raises `ToolError`
 - [ ] T014 [P] [US2] Write failing unit tests in `tests/unit/test_redaction.py`: `redact_private_keys(obj, frozenset({"prv", "privkey"}))` removes exactly those top-level keys when present, leaves all other keys untouched, doesn't mutate the input dict (returns a copy), and no-ops cleanly when none of the target fields are present
+- [ ] T014a [P] [US2] Add failing unit tests for preview logging (FR-011/SC-005) in `tests/unit/test_logging.py` (extend the existing 001 logging test module): `OPNsenseClient.log_preview(tool_name, arguments, token)` emits one stderr JSON record with `outcome="preview"`, the tool name, and the token, and makes **zero** HTTP calls; a subsequent real request for the same operation emits a separate record with `outcome="success"` carrying the same token for correlation — asserting the two records are present and distinguishable
 
-**Checkpoint**: `pytest tests/unit/test_confirmation.py tests/unit/test_redaction.py` —
-MUST report FAILED.
+**Checkpoint**: `pytest tests/unit/test_confirmation.py tests/unit/test_redaction.py tests/unit/test_logging.py` —
+new assertions MUST report FAILED.
 
 ### Implementation for User Story 2 (GREEN)
 
 - [ ] T015 [US2] Implement `src/opnsense_mcp/confirmation.py`: `PendingOperation` frozen dataclass (`token`, `tool_name`, `arguments`, `description`, `expires_at`), `PendingOperationStore(ttl_seconds: float = 120.0)` with `create(tool_name, arguments, description) -> PendingOperation` (uses `secrets.token_urlsafe(32)`, `time.monotonic()`), `consume(token, tool_name, arguments) -> PendingOperation` (raises `ToolError` on any mismatch/expiry/absence; removes on success), private `_evict_expired()` called from both methods
+- [ ] T015a [US2] Implement the preview diagnostic record (FR-011/SC-005): add `log_preview(tool_name: str, arguments: dict[str, Any], token: str) -> None` to `src/opnsense_mcp/client.py` that emits a record via the existing `_log` path with `outcome="preview"` (no HTTP request); the confirmed-execution path already logs via `_log` with `outcome="success"/"error"` and MUST include the same `token` field so preview and execution records correlate and are distinguishable. (Keeps `client.py` domain-agnostic — this is transport/observability, not domain logic.)
 - [ ] T016 [P] [US2] Implement `src/opnsense_mcp/redaction.py`: `redact_private_keys(obj: dict[str, Any], fields: frozenset[str]) -> dict[str, Any]`
 
 **Checkpoint**: tests pass; `mypy --strict src/` and `ruff check .` clean. This phase
-unblocks the high-risk-tool tasks in Phases 5–8 (each such task is annotated below).
+unblocks the high-risk-tool tasks in Phases 5–8 (each such task is annotated below), which
+call `log_preview` in their unconfirmed branch so every high-risk preview is recorded.
 
 ---
 
@@ -173,7 +192,7 @@ confirm its status changes; add a WireGuard peer, verify it appears, then remove
 clean. Wire all three modules into `src/opnsense_mcp/server.py`.
 
 - [ ] T033 [P] [US3] Write failing integration tests in `tests/integration/test_vpn.py`: OpenVPN instance list/status, WireGuard add-peer→apply→list→remove→apply, IPsec connection list, marked `pytest.mark.integration`
-- [ ] T034 [US3] (no implementation task — integration tests validate T017–T032; run against a live instance)
+- [ ] T034 [US3] Run the US3 integration suite against a live (non-production) OPNsense instance (`uv run pytest tests/integration/test_vpn.py -v`) and confirm all pass; record any endpoint-casing or field-shape corrections discovered against the contracts (see research.md "Note on URL casing conventions")
 
 ---
 
@@ -248,8 +267,8 @@ Clarifications) — the two tasks previously flagged are cleared to proceed as d
 
 ### System
 
-- [ ] T049 [P] [US6] Write failing unit tests in `tests/unit/tools/test_system.py` for `system_reboot`/`system_halt`: unconfirmed call makes zero HTTP calls and returns a preview; confirmed call makes exactly one `POST core/system/reboot`(or `/halt`); reused/expired/mismatched tokens raise `ToolError`
-- [ ] T050 [US6] Implement `system_reboot`/`system_halt` in `src/opnsense_mcp/tools/system.py`, gated via `PendingOperationStore` — the representative case for the whole confirm-then-execute mechanism (spec's own US2 Independent Test)
+- [ ] T049 [P] [US6] Write failing unit tests in `tests/unit/tools/test_system.py` for `system_reboot`/`system_halt`: unconfirmed call makes zero HTTP calls, returns a preview, **and emits one `outcome="preview"` diagnostic record** (FR-011/SC-005); confirmed call makes exactly one `POST core/system/reboot`(or `/halt`) and emits one `outcome="success"` record carrying the same token; reused/expired/mismatched tokens raise `ToolError`. This is the end-to-end demonstration that the Phase 4 `log_preview` hook (T015a) produces distinguishable preview vs. execution records for a real high-risk tool.
+- [ ] T050 [US6] Implement `system_reboot`/`system_halt` in `src/opnsense_mcp/tools/system.py`, gated via `PendingOperationStore`, calling `client.log_preview(...)` in the unconfirmed branch — the representative case for the whole confirm-then-execute mechanism (spec's own US2 Independent Test)
 - [ ] T051 [P] [US6] Write failing unit tests for `system_firmware_check`, `_update`, `_upgrade`, `_upgrade_status`, `_log` in `tests/unit/tools/test_system.py`, asserting `_update`/`_upgrade` require `confirm`
 - [ ] T052 [US6] Implement firmware tools in `src/opnsense_mcp/tools/system.py`
 - [ ] T053 [P] [US6] **[scope signed off 2026-08-01]** Write failing unit tests for `system_config_restore` (reverting to an existing backup revision via `core/backup/revert_backup`, preview built from `core/backup/diff`) and `system_config_backup_list` in `tests/unit/tools/test_system.py`
@@ -274,6 +293,7 @@ module) into `server.py`.
 ## Phase 9: Polish & Cross-Cutting Concerns
 
 - [ ] T058 Run the Phase 2 contract-completeness scanner (`tests/contract/test_tool_schemas.py`) across the full ~222-tool surface; fix any straggling contract gaps
+- [ ] T058a Verify FR-003 traceability: confirm every contract's cited `OPNsense endpoint` line names a real action in the current-stable API (spot-check against docs.opnsense.org / `opnsense/core` + `opnsense/plugins` source, per research.md's method); confirm the delivered tool set matches the Assumptions "Enumerated coverage exclusions" list — no endpoint outside that list is silently dropped, and no undocumented endpoint is invented. Record the check outcome alongside T062.
 - [ ] T059 [P] Regenerate `docs/mcp-tools.md` (the cross-cutting tool inventory started before this plan) to include every domain added in this feature, with the same read/write-type table format already established
 - [ ] T060 Full quality gate: `uv run pytest` (unit, excluding integration), `uv run mypy --strict src/`, `uv run ruff check .`, `uv run ruff format --check .` — all clean
 - [x] T061 Spec owner sign-off obtained 2026-08-01 for both scope narrowings (config restore → backup-revision revert; interface ops → reassignment only); `spec.md`'s Clarifications, FR-007, FR-018, US6 AC2/AC4, and Assumptions updated to match the shipped scope
