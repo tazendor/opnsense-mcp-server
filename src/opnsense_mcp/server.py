@@ -45,19 +45,11 @@ def create_server(config: Config, client: OPNsenseClient | None = None) -> FastM
         lifespan=lifespan,
     )
     # Standard (read/stage-then-apply) domains.
-    for module in (
-        system,
-        firewall,
-        interfaces,
-        routes,
-        dhcp,
-        dns,
-        ids,
-        services,
-        proxy,
-    ):
+    for module in (firewall, routes, dhcp, dns, ids, services, proxy):
         module.register_tools(mcp, client)
     # Domains that include high-risk tools also receive the confirmation store.
+    system.register_tools(mcp, client, store)
+    interfaces.register_tools(mcp, client, store)
     openvpn.register_tools(mcp, client, store)
     ipsec.register_tools(mcp, client, store)
     wireguard.register_tools(mcp, client, store)

@@ -12,6 +12,7 @@ import pytest
 from mcp.server.fastmcp import FastMCP
 
 from opnsense_mcp.config import Config
+from opnsense_mcp.confirmation import PendingOperationStore
 from opnsense_mcp.server import create_server
 from opnsense_mcp.tools import dhcp, dns, firewall, interfaces, routes, services, system
 
@@ -252,7 +253,7 @@ class TestFirewallNatSchemas:
 @pytest.fixture
 def system_mcp(mock_client: AsyncMock) -> FastMCP:
     mcp = FastMCP("test-system")
-    system.register_tools(mcp, mock_client)
+    system.register_tools(mcp, mock_client, PendingOperationStore())
     return mcp
 
 
@@ -285,7 +286,7 @@ class TestSystemSchemas:
 @pytest.fixture
 def interfaces_mcp(mock_client: AsyncMock) -> FastMCP:
     mcp = FastMCP("test-interfaces")
-    interfaces.register_tools(mcp, mock_client)
+    interfaces.register_tools(mcp, mock_client, PendingOperationStore())
     return mcp
 
 
