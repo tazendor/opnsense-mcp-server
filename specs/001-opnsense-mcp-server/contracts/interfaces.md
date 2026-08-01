@@ -1,5 +1,10 @@
 # MCP Tool Contracts: Interfaces Domain
 
+**Extended by 002-complete-api-coverage**: interface reassignment is now in scope — see
+`specs/002-complete-api-coverage/contracts/interfaces.md` for the new assignment tools
+(enable/disable and IP/media config remain out of scope — not exposed by any current
+OPNsense REST API, see that spec's research.md §8).
+
 Tools in this domain expose OPNsense network interface information.
 These are read-only diagnostic tools — interface assignment changes are out of scope for v1.
 

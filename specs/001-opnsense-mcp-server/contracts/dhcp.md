@@ -3,6 +3,10 @@
 Tools in this domain expose OPNsense DHCPv4 lease information and service control.
 DHCPv6 is out of scope for v1.
 
+**Superseded by 002-complete-api-coverage**: this document has known drift from the
+shipped implementation (see `specs/002-complete-api-coverage/contracts/dhcp.md` for the
+corrected, current contract covering reads and the new write tools).
+
 ---
 
 ## Tool: `dhcp_lease_list`

@@ -1,5 +1,11 @@
 # MCP Tool Contracts: Services Domain
 
+**Superseded by 002-complete-api-coverage**: the module list below has drifted from the
+shipped implementation (actual `SUPPORTED_MODULES` is `{"unbound", "kea", "ids"}`, not the
+list below) and 002 reconciles + extends it — see
+`specs/002-complete-api-coverage/contracts/services.md` for the corrected, current
+contract.
+
 Tools in this domain control the start, stop, restart, and status of core OPNsense
 services. The `module` parameter identifies the service using its OPNsense API module
 name.

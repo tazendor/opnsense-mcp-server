@@ -1,5 +1,12 @@
 # MCP Tool Contracts: System Domain
 
+**Superseded by 002-complete-api-coverage**: the `system_status` and
+`system_firmware_status` endpoints below have drifted from the shipped implementation
+(actual code calls `core/system/status` and `core/firmware/status`, not the paths below),
+and 002 adds high-risk system operations (reboot, halt, firmware upgrade, config restore,
+interface reassignment) — see `specs/002-complete-api-coverage/contracts/system.md` for
+the corrected, current contract.
+
 Tools in this domain expose OPNsense system status, firmware, and configuration backup.
 
 ---
