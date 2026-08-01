@@ -20,10 +20,25 @@ _CONTRACT_DIRS = (
     _REPO_ROOT / "specs" / "001-opnsense-mcp-server" / "contracts",
     _REPO_ROOT / "specs" / "002-complete-api-coverage" / "contracts",
 )
-# Matches a Tool heading line and captures every exact backtick-quoted tool name on it,
-# e.g. "## Tool: `openvpn_instance_list`" or "### Tool: `ipsec_child_add`".
+# A Tool heading may list several tools compactly, e.g.
+#   "## Tool: `openvpn_static_key_list` / `_get` / `_add` / `_delete`"
+# where a `_suffix` token means "the base name's stem + that suffix". A full name
+# (no leading underscore) resets the stem to its own value minus the last segment.
 _TOOL_HEADING = re.compile(r"^#{2,3}\s+Tool:\s+(.+)$")
-_TOOL_NAME = re.compile(r"`([a-z][a-z0-9_]{2,})`")
+_TOOL_TOKEN = re.compile(r"`([a-z_][a-z0-9_]{2,})`")
+
+
+def _names_from_heading(heading: str) -> set[str]:
+    names: set[str] = set()
+    stem: str | None = None
+    for token in _TOOL_TOKEN.findall(heading):
+        if token.startswith("_"):
+            if stem is not None:
+                names.add(stem + token)
+        else:
+            names.add(token)
+            stem = token.rsplit("_", 1)[0]
+    return names
 
 
 def _documented_tool_names() -> set[str]:
@@ -33,7 +48,7 @@ def _documented_tool_names() -> set[str]:
             for line in md.read_text().splitlines():
                 m = _TOOL_HEADING.match(line)
                 if m:
-                    names.update(_TOOL_NAME.findall(m.group(1)))
+                    names |= _names_from_heading(m.group(1))
     return names
 
 

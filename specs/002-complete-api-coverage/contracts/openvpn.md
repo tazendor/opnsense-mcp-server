@@ -66,6 +66,19 @@ Note under `openvpn_instance_delete` below.
 
 ---
 
+## Tool: `openvpn_instance_toggle`
+
+**Description**: Enable or disable an OpenVPN instance by UUID. Staged until
+`openvpn_apply` is called.
+
+**OPNsense endpoint**: `POST /api/openvpn/instances/toggle/{uuid}`
+
+**Input schema**: `{"type": "object", "properties": {"uuid": {"type": "string"}}, "required": ["uuid"]}`
+
+**Output**: `{"result": "..."}`.
+
+---
+
 ## Tool: `openvpn_instance_delete`
 
 **OPNsense endpoint**: `POST /api/openvpn/instances/del/{uuid}`

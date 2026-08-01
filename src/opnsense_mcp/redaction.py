@@ -16,3 +16,26 @@ def redact_private_keys(obj: dict[str, Any], fields: frozenset[str]) -> dict[str
 
     Does not mutate the input. No-ops cleanly when none of the fields are present."""
     return {k: v for k, v in obj.items() if k not in fields}
+
+
+def redact_rows(resp: dict[str, Any], fields: frozenset[str]) -> dict[str, Any]:
+    """Redact ``fields`` from each row of a search response (``{"rows": [...]}``)."""
+    rows = resp.get("rows")
+    if not isinstance(rows, list):
+        return resp
+    return {
+        **resp,
+        "rows": [
+            redact_private_keys(r, fields) if isinstance(r, dict) else r for r in rows
+        ],
+    }
+
+
+def redact_wrapped(
+    resp: dict[str, Any], wrapper: str, fields: frozenset[str]
+) -> dict[str, Any]:
+    """Redact ``fields`` from ``resp[wrapper]`` (a get response like a cert object)."""
+    inner = resp.get(wrapper)
+    if not isinstance(inner, dict):
+        return resp
+    return {**resp, wrapper: redact_private_keys(inner, fields)}
