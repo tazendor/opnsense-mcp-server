@@ -14,6 +14,7 @@ from opnsense_mcp.tools import (
     firewall,
     ids,
     interfaces,
+    ipsec,
     openvpn,
     routes,
     services,
@@ -44,4 +45,5 @@ def create_server(config: Config, client: OPNsenseClient | None = None) -> FastM
         module.register_tools(mcp, client)
     # Domains that include high-risk tools also receive the confirmation store.
     openvpn.register_tools(mcp, client, store)
+    ipsec.register_tools(mcp, client, store)
     return mcp
