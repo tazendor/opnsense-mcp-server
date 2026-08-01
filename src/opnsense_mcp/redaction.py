@@ -4,7 +4,7 @@ Each domain that can return key material applies this with an explicit field set
 OpenVPN StaticKey ``key``; IPsec KeyPair ``privateKey`` / PreSharedKey ``Key``;
 WireGuard Server ``privkey``; Trust Ca/Cert ``prv`` and ``prv_payload``). An explicit
 allowlist is used rather than a "looks like a secret" heuristic, to avoid both false
-positives (dropping legitimate fields) and false negatives (missing an oddly-named one)."""
+positives (dropping legitimate fields) and false negatives (missing an odd name)."""
 
 from __future__ import annotations
 
