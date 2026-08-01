@@ -24,3 +24,10 @@ async def post_or_raise(
         return await client.post(path, data)
     except OPNsenseAPIError as exc:
         raise ToolError.from_api_error(exc) from exc
+
+
+async def get_list_or_raise(client: OPNsenseClient, path: str) -> list[dict[str, Any]]:
+    try:
+        return await client.get_list(path)
+    except OPNsenseAPIError as exc:
+        raise ToolError.from_api_error(exc) from exc
