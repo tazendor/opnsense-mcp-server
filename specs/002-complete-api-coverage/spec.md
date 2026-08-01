@@ -287,18 +287,25 @@ firmware upgrade, and interface reassignment.
 - **FR-001**: The server MUST expose every documented OPNsense REST API endpoint
   across the System, Firewall, Interfaces, Routes, DHCP, DNS Resolver, Services, IDS,
   VPN (OpenVPN, IPsec, WireGuard), Web Proxy, Captive Portal, and Certificate/PKI
-  domains as a discrete MCP tool, superseding 001's domain boundary.
+  domains as a discrete MCP tool, superseding 001's domain boundary — except the
+  endpoints explicitly enumerated as out of scope under Assumptions ("Enumerated
+  coverage exclusions"), which are intentionally not wrapped.
 - **FR-002**: Every MCP tool, including ones that already ship without one, MUST have
   a corresponding contract document tying it to a specific OPNsense REST API
   endpoint. No tool may exist without a contract.
 - **FR-003**: The server MUST NOT implement behavior not documented in the OPNsense
   REST API for the current stable release; this applies equally to the newly added
-  domains.
+  domains. Every tool MUST trace to a specific documented endpoint in its contract
+  document, and this traceability MUST be verified as an explicit acceptance step
+  before merge (not left to reviewer discretion).
 
 **Completing existing domains (User Story 1)**
 
 - **FR-004**: The server MUST support creating, updating, deleting, and applying
-  DHCPv4 static mappings, and reading/writing DHCPv4 service settings.
+  DHCPv4 static mappings (Kea "reservations"), and reading/writing DHCPv4 service
+  settings. Broader Kea DHCP configuration (subnet, option, and peer management,
+  dynamic DNS) is beyond this requirement and enumerated as out of scope under
+  Assumptions.
 - **FR-005**: The server MUST support enabling and disabling individual IDS/IPS
   rulesets (and rules, if individually addressable in the current stable API).
 - **FR-006**: The server's declared set of controllable service modules MUST match
@@ -379,7 +386,8 @@ firmware upgrade, and interface reassignment.
 
 - **SC-001**: Every domain listed in FR-001 has full read-write MCP tool coverage
   for its documented OPNsense REST API endpoints; no documented endpoint in those
-  domains is missing a corresponding tool.
+  domains is missing a corresponding tool, except the endpoints enumerated as out of
+  scope under Assumptions ("Enumerated coverage exclusions").
 - **SC-002**: 100% of MCP tools in the server, including those that predate this
   spec, have a corresponding contract document; zero tools are undocumented.
 - **SC-003**: In testing, 100% of high-risk operations (per FR-007's list) are
@@ -402,6 +410,27 @@ firmware upgrade, and interface reassignment.
   Clarifications 2026-08-01). All other assumptions and requirements from 001
   (HTTPS-only, API key/secret auth, no caching, dual transport, per-call logging,
   current-stable-release targeting) continue to apply.
+- **Enumerated coverage exclusions** (the bounded set of documented endpoints
+  intentionally not wrapped, qualifying FR-001/SC-001 so the coverage claim matches the
+  delivered plan). Each is a deliberate decision with a stated reason, not an oversight;
+  expanding any of them is a follow-up feature, not in-scope rework:
+  - **Web Proxy `Acl` policy-engine endpoints** — require the additional `os-OPNProxy`
+    (and `os-redis`) plugins beyond base `os-squid`; wrapping them would return
+    not-found on standard installations, conflicting with FR-003's plugin-not-installed
+    handling. Base `os-squid` ACL controls (the flat allow/deny lists) remain covered
+    via proxy settings.
+  - **Captive Portal `Access` (end-client logon/logoff page) and `Voucher` endpoints** —
+    client-facing portal interaction and voucher issuance, outside the
+    administrator-management scope of User Story 4.
+  - **OpenVPN `Export` endpoints** (client config bundle/provider export).
+  - **Kea DHCP `Subnet`, `Option`, `Peer`, and dynamic-DNS endpoints** — beyond FR-004's
+    stated DHCP scope (static reservations + service settings).
+  - **Interface enable/disable and IP/media configuration; arbitrary externally-supplied
+    `config.xml` restore** — not exposed by the current OPNsense REST API (Clarifications
+    2026-08-01).
+  - **Firewall, Routes, and DNS Resolver** coverage remains as delivered in 001; 002 does
+    not re-audit those three domains for endpoints added to OPNsense since 001, though
+    FR-001 nominally lists them. Any such re-audit is tracked as separate follow-up work.
 - "Documented OPNsense REST API" includes the officially maintained plugins bundled
   with a standard OPNsense installation (OpenVPN, IPsec/strongSwan, WireGuard, Squid
   proxy, Captive Portal) — the same standard already applied when 001's IDS support

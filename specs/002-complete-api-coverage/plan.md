@@ -67,6 +67,10 @@ The confirmation store adds a single dict lookup/insert — negligible.
   document — closes the gap this spec's own research found in 001's `dhcp.md`,
   `services.md`, and `system.md` contracts, which had drifted from the shipped
   implementation (FR-002/FR-006).
+- **New**: each high-risk preview MUST emit its own diagnostic record (`outcome="preview"`)
+  through the same `OPNsenseClient` logging path as real requests, distinguishable from the
+  confirmed-execution record by a shared token, so an operator can audit both steps from
+  the server's diagnostic log alone (FR-011/SC-005).
 
 **Scale/Scope**: Single OPNsense instance per server process, unchanged. Domain count
 grows from 8 to 14 (System, Firewall, Interfaces, Routes, DHCP, DNS, Services, IDS
@@ -139,6 +143,10 @@ real OPNsense endpoint per FR-003, none invented for symmetry.
   OPNsense (mock asserts zero calls); confirmed call with a valid token contacts OPNsense
   exactly once; expired/mismatched/reused tokens raise `ToolError` without contacting
   OPNsense.
+- The preview diagnostic record (FR-011/SC-005) is tested in `tests/unit/test_logging.py`
+  (a preview emits one `outcome="preview"` record and zero HTTP calls) and demonstrated
+  end-to-end on a real high-risk tool by the representative `system_reboot` test — so an
+  operator can distinguish preview from confirmed execution in the server's own log.
 - Contract tests extended per Constraints above to enforce FR-002/SC-002 (zero
   undocumented tools) as a CI-checkable gate, not just a manual review step.
 
@@ -182,7 +190,7 @@ src/opnsense_mcp/
 ├── __init__.py
 ├── __main__.py
 ├── config.py                  # + OPNSENSE_CONFIRM_TTL env var
-├── client.py                  # unchanged — thin transport, no domain knowledge
+├── client.py                  # + log_preview() for FR-011/SC-005 preview records (still domain-agnostic)
 ├── errors.py                  # unchanged
 ├── confirmation.py            # NEW: PendingOperation, PendingOperationStore
 ├── redaction.py                # NEW: redact_private_keys() + per-domain field sets
