@@ -69,9 +69,11 @@ def register_tools(
         return await post_or_raise(client, "core/firmware/log", None)
 
     @mcp.tool()
-    async def system_config_backup_list(host: str = "") -> dict[str, Any]:
-        """List available configuration backup revisions (local history or a remote
-        source). Use a listed revision with system_config_restore."""
+    async def system_config_backup_list(host: str = "this") -> dict[str, Any]:
+        """List available configuration backup revisions for a provider. Defaults to
+        "this" (the local This-Firewall history); the endpoint requires a provider
+        segment (see core/backup/providers). Use a listed revision with
+        system_config_restore. Returns {"items": [...]}."""
         return await get_or_raise(client, f"core/backup/backups/{host}")
 
     # --- High-risk system operations (FR-018, gated) ---
@@ -156,7 +158,7 @@ def register_tools(
 
     @mcp.tool()
     async def system_config_restore(
-        backup: str, host: str = "", confirm: str | None = None
+        backup: str, host: str = "this", confirm: str | None = None
     ) -> dict[str, Any]:
         """Revert the configuration to an existing on-box backup revision (from
         system_config_backup_list). HIGH-RISK: preview then confirm. Note: restoring an

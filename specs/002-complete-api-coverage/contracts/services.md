@@ -20,7 +20,6 @@ domains, each of which has its own standard `Service` controller
 | `unbound` | DNS Resolver (Unbound) |
 | `kea` | DHCPv4 server (Kea) |
 | `ids` | Intrusion Detection System (Suricata) |
-| `openvpn` | OpenVPN |
 | `ipsec` | IPsec (strongSwan) |
 | `wireguard` | WireGuard |
 | `proxy` | Web Proxy (Squid) |

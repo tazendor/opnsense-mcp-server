@@ -17,7 +17,6 @@ EXTENDED_MODULES = [
     "unbound",
     "kea",
     "ids",
-    "openvpn",
     "ipsec",
     "wireguard",
     "proxy",
