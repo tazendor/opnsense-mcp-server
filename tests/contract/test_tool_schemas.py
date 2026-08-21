@@ -1,12 +1,81 @@
-"""Contract tests: verify each MCP tool across all 7 domains has the correct name,
-non-empty description, and input schema required fields per contracts/*.md."""
+"""Contract tests: verify each MCP tool across all domains has the correct name,
+non-empty description, and input schema required fields per contracts/*.md.
 
+Also enforces FR-002/SC-002: every *registered* tool has a contract heading in one of
+the spec `contracts/*.md` files (the contract-completeness scanner)."""
+
+import re
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
 from mcp.server.fastmcp import FastMCP
 
+from opnsense_mcp.config import Config
+from opnsense_mcp.confirmation import PendingOperationStore
+from opnsense_mcp.server import create_server
 from opnsense_mcp.tools import dhcp, dns, firewall, interfaces, routes, services, system
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_CONTRACT_DIRS = (
+    _REPO_ROOT / "specs" / "001-opnsense-mcp-server" / "contracts",
+    _REPO_ROOT / "specs" / "002-complete-api-coverage" / "contracts",
+)
+# A Tool heading may list several tools compactly, e.g.
+#   "## Tool: `openvpn_static_key_list` / `_get` / `_add` / `_delete`"
+# where a `_suffix` token means "the base name's stem + that suffix". A full name
+# (no leading underscore) resets the stem to its own value minus the last segment.
+_TOOL_HEADING = re.compile(r"^#{2,3}\s+Tool:\s+(.+)$")
+_TOOL_TOKEN = re.compile(r"`([a-z_][a-z0-9_]{2,})`")
+
+
+def _names_from_heading(heading: str) -> set[str]:
+    names: set[str] = set()
+    stem: str | None = None
+    for token in _TOOL_TOKEN.findall(heading):
+        if token.startswith("_"):
+            if stem is not None:
+                names.add(stem + token)
+        else:
+            names.add(token)
+            stem = token.rsplit("_", 1)[0]
+    return names
+
+
+def _documented_tool_names() -> set[str]:
+    names: set[str] = set()
+    for d in _CONTRACT_DIRS:
+        for md in d.glob("*.md"):
+            for line in md.read_text().splitlines():
+                m = _TOOL_HEADING.match(line)
+                if m:
+                    names |= _names_from_heading(m.group(1))
+    return names
+
+
+def _registered_tool_names(mock_client: AsyncMock) -> set[str]:
+    cfg = Config(url="https://fake.example", api_key="k", api_secret="s")
+    mcp = create_server(cfg, client=mock_client)
+    return set(mcp._tool_manager._tools.keys())
+
+
+class TestContractCompleteness:
+    """FR-002/SC-002: no registered tool may lack a contract document.
+
+    This is a standing regression gate, expected to PASS with the current tool set —
+    its job is to FAIL the moment a new tool is registered without a matching
+    `## Tool: \\`name\\`` heading in a contract file."""
+
+    def test_every_registered_tool_has_a_contract(self, mock_client: AsyncMock) -> None:
+        registered = _registered_tool_names(mock_client)
+        documented = _documented_tool_names()
+        missing = sorted(registered - documented)
+        assert not missing, (
+            f"{len(missing)} registered tool(s) have no contract heading: {missing}"
+        )
+
+    def test_contract_dirs_exist_and_are_nonempty(self) -> None:
+        assert _documented_tool_names(), "no `## Tool:` headings found in any contract"
 
 
 @pytest.fixture
@@ -184,7 +253,7 @@ class TestFirewallNatSchemas:
 @pytest.fixture
 def system_mcp(mock_client: AsyncMock) -> FastMCP:
     mcp = FastMCP("test-system")
-    system.register_tools(mcp, mock_client)
+    system.register_tools(mcp, mock_client, PendingOperationStore())
     return mcp
 
 
@@ -217,7 +286,7 @@ class TestSystemSchemas:
 @pytest.fixture
 def interfaces_mcp(mock_client: AsyncMock) -> FastMCP:
     mcp = FastMCP("test-interfaces")
-    interfaces.register_tools(mcp, mock_client)
+    interfaces.register_tools(mcp, mock_client, PendingOperationStore())
     return mcp
 
 

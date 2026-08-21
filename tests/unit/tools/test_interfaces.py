@@ -65,3 +65,44 @@ class TestInterfaceNdpTable:
         payload = [{"ipv6": "::1", "mac": "00:00:00:00:00:01", "intf": "lo0"}]
         mock_client.get_list.return_value = payload
         assert await _interface_ndp_table(mock_client) == payload
+
+
+class TestInterfaceAssignment:
+    """FR-018: assignment update/delete are gated; add/list/apply are standard.
+    The scanner confirms all 6 assignment tools are documented."""
+
+    @staticmethod
+    def _fn(mock_client: AsyncMock, name: str):  # type: ignore[no-untyped-def]
+        from mcp.server.fastmcp import FastMCP
+
+        from opnsense_mcp.confirmation import PendingOperationStore
+        from opnsense_mcp.tools import interfaces
+
+        mcp = FastMCP("t")
+        interfaces.register_tools(mcp, mock_client, PendingOperationStore())
+        return mcp._tool_manager._tools[name].fn
+
+    async def test_list_endpoint(self, mock_client: AsyncMock) -> None:
+        mock_client.get.return_value = {"rows": []}
+        await self._fn(mock_client, "interface_assignment_list")()
+        mock_client.get.assert_called_once_with("interfaces/assignment/search_item")
+
+    async def test_add_wraps_interface(self, mock_client: AsyncMock) -> None:
+        mock_client.post.return_value = {"result": "saved"}
+        await self._fn(mock_client, "interface_assignment_add")({"if": "igb2"})
+        mock_client.post.assert_called_once_with(
+            "interfaces/assignment/add_item", {"interface": {"if": "igb2"}}
+        )
+
+    async def test_update_is_gated(self, mock_client: AsyncMock) -> None:
+        fn = self._fn(mock_client, "interface_assignment_update")
+        result = await fn(ifname="opt3", assignment={"if": "igb5"})
+        assert result["status"] == "confirmation_required"
+        mock_client.post.assert_not_called()
+
+    async def test_apply_endpoint(self, mock_client: AsyncMock) -> None:
+        mock_client.post.return_value = {"status": "ok"}
+        await self._fn(mock_client, "interface_apply")()
+        mock_client.post.assert_called_once_with(
+            "interfaces/assignment/reconfigure", None
+        )

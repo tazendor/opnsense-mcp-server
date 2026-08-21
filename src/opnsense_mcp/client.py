@@ -62,14 +62,37 @@ class OPNsenseClient:
         status_code: int | None,
         outcome: str,
         req_id: str,
+        token: str | None = None,
     ) -> None:
-        record = {
+        record: dict[str, object] = {
             "ts": datetime.now(UTC).isoformat(),
             "req_id": req_id,
             "method": method,
             "path": path.replace("\r", "").replace("\n", " "),
             "status_code": status_code,
             "outcome": outcome,
+        }
+        if token is not None:
+            record["token"] = token
+        print(json.dumps(record), file=sys.stderr, flush=True)
+
+    def log_preview(
+        self, tool_name: str, arguments: dict[str, Any], token: str
+    ) -> None:
+        """Emit a diagnostic record for a high-risk operation preview (FR-011/SC-005).
+
+        Makes no HTTP request. Uses the same stderr log stream as real requests so an
+        operator can audit both the preview and the later confirmed execution — which
+        shares the same ``token`` — without the MCP client's session history."""
+        record: dict[str, object] = {
+            "ts": datetime.now(UTC).isoformat(),
+            "req_id": str(uuid.uuid4()),
+            "method": None,
+            "path": None,
+            "status_code": None,
+            "outcome": "preview",
+            "tool": tool_name,
+            "token": token,
         }
         print(json.dumps(record), file=sys.stderr, flush=True)
 
@@ -154,23 +177,26 @@ class OPNsenseClient:
         return response.text
 
     async def post(
-        self, path: str, data: dict[str, Any] | None = None
+        self,
+        path: str,
+        data: dict[str, Any] | None = None,
+        token: str | None = None,
     ) -> dict[str, Any]:
         req_id = str(uuid.uuid4())
         try:
             response = await self._client.post(f"/api/{path}", json=data)
         except httpx.ConnectTimeout as exc:
-            self._log("POST", path, None, "timeout", req_id)
+            self._log("POST", path, None, "timeout", req_id, token)
             raise ToolError(f"Connect timeout exceeded for {path}") from exc
         except httpx.ReadTimeout as exc:
-            self._log("POST", path, None, "timeout", req_id)
+            self._log("POST", path, None, "timeout", req_id, token)
             raise ToolError(f"Read timeout exceeded for {path}") from exc
         except httpx.ConnectError as exc:
-            self._log("POST", path, None, "error", req_id)
+            self._log("POST", path, None, "error", req_id, token)
             raise ToolError(f"Could not connect to OPNsense for {path}") from exc
 
         if response.is_error:
-            self._log("POST", path, response.status_code, "error", req_id)
+            self._log("POST", path, response.status_code, "error", req_id, token)
             raise OPNsenseAPIError(
                 status_code=response.status_code,
                 body=_safe_json(response),
@@ -178,7 +204,7 @@ class OPNsenseClient:
                 method="POST",
             )
 
-        self._log("POST", path, response.status_code, "success", req_id)
+        self._log("POST", path, response.status_code, "success", req_id, token)
         result: dict[str, Any] = response.json()
         return result
 

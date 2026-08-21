@@ -7,7 +7,22 @@ from mcp.server.fastmcp import FastMCP
 from opnsense_mcp.client import OPNsenseClient
 from opnsense_mcp.errors import OPNsenseAPIError, ToolError
 
-SUPPORTED_MODULES: frozenset[str] = frozenset({"unbound", "kea", "ids"})
+# FR-006 (002): reconciled against the current stable release and extended with the
+# IPsec / WireGuard / proxy / captive-portal domains, each exposing the same
+# {module}/service/{action} lifecycle controller. OpenVPN is intentionally excluded:
+# it has no generic {module}/service/status endpoint (it uses id-based service actions),
+# so it's controlled via the openvpn_service_* tools instead (verified live 2026-08-02).
+SUPPORTED_MODULES: frozenset[str] = frozenset(
+    {
+        "unbound",
+        "kea",
+        "ids",
+        "ipsec",
+        "wireguard",
+        "proxy",
+        "captiveportal",
+    }
+)
 
 
 def _validate_module(module: str) -> None:
@@ -54,23 +69,27 @@ def register_tools(mcp: FastMCP, client: OPNsenseClient) -> None:
     @mcp.tool()
     async def service_status(module: str) -> dict[str, Any]:
         """Retrieve the running/stopped status of a core OPNsense service.
-        Supported modules: unbound, kea, ids."""
+        Supported modules: unbound, kea, ids, ipsec, wireguard,
+        proxy, captiveportal."""
         return await _service_status(client, module)
 
     @mcp.tool()
     async def service_start(module: str) -> dict[str, Any]:
         """Start a core OPNsense service. Has no effect if already running.
-        Supported modules: unbound, kea, ids."""
+        Supported modules: unbound, kea, ids, ipsec, wireguard,
+        proxy, captiveportal."""
         return await _service_start(client, module)
 
     @mcp.tool()
     async def service_stop(module: str) -> dict[str, Any]:
         """Stop a core OPNsense service. Has no effect if already stopped.
-        Supported modules: unbound, kea, ids."""
+        Supported modules: unbound, kea, ids, ipsec, wireguard,
+        proxy, captiveportal."""
         return await _service_stop(client, module)
 
     @mcp.tool()
     async def service_restart(module: str) -> dict[str, Any]:
         """Restart a core OPNsense service, applying any pending configuration.
-        Supported modules: unbound, kea, ids."""
+        Supported modules: unbound, kea, ids, ipsec, wireguard,
+        proxy, captiveportal."""
         return await _service_restart(client, module)

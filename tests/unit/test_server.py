@@ -82,9 +82,11 @@ class TestClientShutdown:
 
 
 class TestServerWiring:
-    def test_all_43_tools_registered(self, server_config: Config) -> None:
+    def test_minimum_tool_count_registered(self, server_config: Config) -> None:
+        # Floor rises as 002 domains land; was 43 in 001, +8 with US1 writes.
+        # A lower bound catches accidental tool drops without churning every phase.
         mcp = create_server(server_config)
-        assert len(mcp._tool_manager._tools) == 43
+        assert len(mcp._tool_manager._tools) >= 51
 
     def test_tool_names_are_unique(self, server_config: Config) -> None:
         mcp = create_server(server_config)

@@ -155,6 +155,48 @@ class TestGetTextLogging:
         assert record["outcome"] == "success"
 
 
+class TestPreviewLogging:
+    """FR-011/SC-005: a high-risk preview emits its own diagnostic record, marked
+    outcome="preview", making zero HTTP calls, distinguishable from the confirmed
+    execution record by a shared token."""
+
+    async def test_log_preview_emits_preview_record_no_http(
+        self,
+        client_config: Config,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        async with OPNsenseClient(client_config) as client:
+            client.log_preview("system_reboot", {"a": 1}, "token-abc")
+
+        record = _parse_log(capsys.readouterr().err)
+        assert record["outcome"] == "preview"
+        assert record["tool"] == "system_reboot"
+        assert record["token"] == "token-abc"
+        assert record["status_code"] is None
+
+    @respx.mock
+    async def test_preview_and_execution_records_share_token(
+        self,
+        client_config: Config,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        respx.post("https://opnsense.test/api/core/system/reboot").mock(
+            return_value=httpx.Response(200, json={"status": "ok"})
+        )
+        async with OPNsenseClient(client_config) as client:
+            client.log_preview("system_reboot", {}, "token-xyz")
+            await client.post("core/system/reboot", None, token="token-xyz")
+
+        lines = [
+            json.loads(x)
+            for x in capsys.readouterr().err.strip().splitlines()
+            if x.strip()
+        ]
+        preview = next(r for r in lines if r["outcome"] == "preview")
+        execution = next(r for r in lines if r["outcome"] == "success")
+        assert preview["token"] == execution["token"] == "token-xyz"
+
+
 class TestLogSanitization:
     @respx.mock
     async def test_cr_lf_stripped_from_path_in_log(
