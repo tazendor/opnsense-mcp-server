@@ -11,20 +11,26 @@ A Python [Model Context Protocol](https://modelcontextprotocol.io/) server that 
 
 ## What it does
 
-The server proxies 43 OPNsense API endpoints across eight domains as MCP tools, letting AI clients query and mutate firewall state through natural language.
+The server exposes **223 OPNsense API operations as MCP tools across 14 subsystems**, letting AI clients inspect and administer firewall state through natural language. The complete generated inventory is in [`docs/mcp-tools.md`](docs/mcp-tools.md).
 
-| Domain | Tools | Capabilities |
-|--------|-------|--------------|
-| System | 3 | Status, firmware check, config backup |
-| Firewall | 17 | Rule and alias CRUD, NAT port forwards, apply |
-| Interfaces | 4 | Interface list, config, ARP/NDP tables |
-| DHCP | 3 | Lease list, settings, static mappings |
+| Subsystem | Tools | Capabilities |
+|-----------|------:|--------------|
+| System | 12 | Status, configuration backup/restore, firmware operations, reboot/halt |
+| Firewall | 17 | Rule and alias CRUD, destination NAT port forwards, apply |
+| Interfaces | 10 | Interface state/tables and assignment CRUD/apply |
 | Routes | 5 | Static route CRUD and apply |
-| DNS | 6 | Unbound settings and host override CRUD |
-| IDS | 1 | Ruleset list |
-| Services | 4 | Start/stop/restart/status for core modules |
+| DHCP | 8 | Kea leases, settings, static mappings, apply |
+| DNS / Unbound | 6 | Settings and host-override CRUD/apply |
+| IDS / IPS | 4 | Ruleset/rule toggles and apply |
+| Services | 4 | Start, stop, restart, and status for supported modules |
+| OpenVPN | 24 | Instances, client overrides, sessions, routes, and static keys |
+| IPsec | 50 | Connections, children, credentials, pools, endpoints, and sessions |
+| WireGuard | 24 | Servers, clients, key material, service control, and status |
+| Web Proxy (Squid) | 28 | Settings, PAC objects, remote blacklists, and service control |
+| Captive Portal | 15 | Zones, sessions, and service control |
+| Trust / Certificates | 16 | CAs, certificates, CRLs, settings, and certificate export/revocation |
 
-Mutating operations follow OPNsense's staged-then-apply model: changes are staged by `_add`/`_update`/`_delete` tools and committed by the corresponding `_apply` tool.
+Most mutating operations follow OPNsense's staged-then-apply model: changes are staged by `_add`/`_update`/`_delete` tools and committed by the corresponding `_apply` tool. The server additionally protects 13 high-risk operations with an explicit preview → confirmation-token → execute flow; see [High-risk operations](#high-risk-operations).
 
 ## Requirements
 
@@ -66,13 +72,14 @@ uv sync
 | `OPNSENSE_HTTP_PORT` | no | `8000` | Port for HTTP transport |
 | `OPNSENSE_CONNECT_TIMEOUT` | no | `10.0` | Seconds to wait for OPNsense TCP connection |
 | `OPNSENSE_READ_TIMEOUT` | no | `60.0` | Seconds to wait for OPNsense API response |
+| `OPNSENSE_CONFIRM_TTL` | no | `120.0` | Lifetime in seconds for high-risk-operation confirmation tokens |
 
 ### Config file
 
 Create `~/.config/opnsense-mcp/config.toml`:
 
 ```toml
-url = "https://192.168.1.1"
+url = "https://opnsense.example.invalid"
 api_key = "your-api-key"
 api_secret = "your-api-secret"
 verify_tls = false      # omit or set true for valid certificates
@@ -81,9 +88,19 @@ http_host = "127.0.0.1"
 http_port = 8000
 connect_timeout = 10.0
 read_timeout = 60.0
+confirm_ttl_seconds = 120.0
 ```
 
-Environment variables override config file values. The config file is optional — environment variables alone are sufficient.
+Environment variables override config-file values. The config file is optional — environment variables alone are sufficient.
+
+## High-risk operations
+
+Thirteen operations that can interrupt connectivity, destroy configuration, revoke trust, or disconnect groups of users require two calls:
+
+1. Call the high-risk tool without `confirm`. The server validates the request, returns a single-use `confirm_token`, records an audit preview, and makes **no request** to OPNsense.
+2. Repeat the exact same tool and arguments with `confirm` set to that token before it expires (120 seconds by default). The token is bound to that tool and argument set, cannot be reused, and is lost if the server restarts.
+
+This confirmation flow covers system restore/firmware/reboot/halt, interface reassignment, selected VPN teardown operations, certificate revocation, and bulk captive-portal session disconnects. The full tool inventory marks each high-risk tool.
 
 ## Running
 
@@ -104,7 +121,7 @@ uv run opnsense-mcp
       "command": "uv",
       "args": ["run", "--project", "/path/to/opnsense-mcp-server", "opnsense-mcp"],
       "env": {
-        "OPNSENSE_URL": "https://192.168.1.1",
+        "OPNSENSE_URL": "https://opnsense.example.invalid",
         "OPNSENSE_API_KEY": "your-api-key",
         "OPNSENSE_API_SECRET": "your-api-secret"
       }
@@ -122,7 +139,7 @@ uv run opnsense-mcp
       "command": "uv",
       "args": ["run", "--project", "/path/to/opnsense-mcp-server", "opnsense-mcp"],
       "env": {
-        "OPNSENSE_URL": "https://192.168.1.1",
+        "OPNSENSE_URL": "https://opnsense.example.invalid",
         "OPNSENSE_API_KEY": "your-api-key",
         "OPNSENSE_API_SECRET": "your-api-secret"
       }
@@ -139,7 +156,7 @@ If you installed via `pip install tazendor-opnsense-mcp`, replace the `uv run --
     "opnsense": {
       "command": "opnsense-mcp",
       "env": {
-        "OPNSENSE_URL": "https://192.168.1.1",
+        "OPNSENSE_URL": "https://opnsense.example.invalid",
         "OPNSENSE_API_KEY": "your-api-key",
         "OPNSENSE_API_SECRET": "your-api-secret"
       }
@@ -186,7 +203,7 @@ The server binds at `http://<HTTP_HOST>:<HTTP_PORT>/mcp`. With the defaults abov
 
 ## Docker
 
-The server ships with a production-ready Docker image built on `python:3.12-slim-bookworm`. Dependencies are installed in the build stage via `uv`, then only the `.venv` is copied to the runtime stage — no build tooling in the final image. The container runs as a non-root user (`uid 1000`).
+The repository contains a multi-stage Docker image. The builder uses `uv` with Python 3.12; the current runtime image is `python:3.14-slim-bookworm`. Only the built virtual environment is copied into the runtime image, which runs as non-root `appuser` (UID 1000). HTTP transport defaults to `192.0.2.1:8000` inside the container.
 
 ### Build
 
@@ -194,30 +211,22 @@ The server ships with a production-ready Docker image built on `python:3.12-slim
 docker build -t opnsense-mcp .
 ```
 
-### Run with Docker Compose (recommended)
+### Run HTTP transport
 
-Copy `.env.example` to `.env` and fill in your credentials:
-
-```bash
-cp .env.example .env
-# edit .env
-docker compose up -d
-```
-
-The server listens on `http://127.0.0.1:8000/mcp`. The compose file binds only to `127.0.0.1` — to expose on a LAN, change the `ports` entry and put a reverse proxy in front for auth.
-
-### Run without Compose
+Create an environment file outside the repository (it contains the OPNsense API credential), restrict its permissions, and pass it to Docker. It must at least provide `OPNSENSE_URL`, `OPNSENSE_API_KEY`, and `OPNSENSE_API_SECRET`; set `OPNSENSE_VERIFY_TLS=true` unless a deliberately trusted local certificate requires otherwise.
 
 ```bash
 docker run -d \
   --name opnsense-mcp \
   -p 127.0.0.1:8000:8000 \
-  --env-file .env \
+  --env-file /secure/path/opnsense-mcp.env \
   --read-only --tmpfs /tmp \
   --cap-drop ALL \
   --security-opt no-new-privileges:true \
   opnsense-mcp
 ```
+
+The current repository does not ship a Compose file or `.env.example`. The command above publishes only on loopback; for LAN or Internet-facing use, place an authenticated reverse proxy in front of the server. See [`Caddyfile.example`](Caddyfile.example) for a hardening example.
 
 ### stdio via Docker
 
@@ -233,7 +242,8 @@ You can run the server in stdio mode so that a client such as Claude Desktop or 
         "--read-only", "--tmpfs", "/tmp",
         "--cap-drop", "ALL",
         "--security-opt", "no-new-privileges:true",
-        "--env-file", "/path/to/.env",
+        "-e", "OPNSENSE_TRANSPORT=stdio",
+        "--env-file", "/secure/path/opnsense-mcp.env",
         "opnsense-mcp",
         "opnsense-mcp"
       ]

@@ -43,7 +43,7 @@ matches `RouteRow` from the data model.
     "route": {
       "type": "object",
       "properties": {
-        "network":  {"type": "string", "description": "Destination network in CIDR notation, e.g. '10.0.0.0/8'"},
+        "network":  {"type": "string", "description": "Destination network in CIDR notation, e.g. '192.0.2.0/24'"},
         "gateway":  {"type": "string", "description": "Gateway name or IP"},
         "descr":    {"type": "string", "description": "Optional description"},
         "disabled": {"type": "string", "enum": ["0", "1"], "default": "0"}

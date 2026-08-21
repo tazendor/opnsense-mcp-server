@@ -24,7 +24,7 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy --strict src/
 
 ## Validating User Story 1: Complete Network & Service Configuration Writes
 
-1. Ask: *"Add a DHCP static mapping for MAC aa:bb:cc:dd:ee:ff to 192.168.1.50 on the LAN
+1. Ask: *"Add a DHCP static mapping for MAC aa:bb:cc:dd:ee:ff to 192.0.2.5 on the LAN
    subnet, then apply it."*
    - Expected: `dhcp_static_add` stages the mapping, `dhcp_apply` reconfigures Kea, a
      follow-up `dhcp_static_list` includes the new entry.

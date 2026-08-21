@@ -23,7 +23,7 @@ from typing import Literal
 @dataclass
 class Config:
     # Required
-    url: str                                         # e.g. "https://192.168.1.1"
+    url: str                                         # e.g. "https://opnsense.example.invalid"
     api_key: str
     api_secret: str
 
@@ -204,7 +204,7 @@ class RouteRow(TypedDict):
     # From POST /api/routes/routes/searchroute (rows array)
     uuid: str
     disabled: str          # "0" | "1"
-    network: str           # CIDR, e.g. "10.0.0.0/8"
+    network: str           # CIDR, e.g. "192.0.2.0/24"
     gateway: str
     descr: str             # optional
 ```

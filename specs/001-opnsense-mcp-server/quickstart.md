@@ -24,7 +24,7 @@ uv sync
 ### Option A: Environment variables (recommended for local testing)
 
 ```bash
-export OPNSENSE_URL="https://192.168.1.1"
+export OPNSENSE_URL="https://opnsense.example.invalid"
 export OPNSENSE_API_KEY="your-api-key"
 export OPNSENSE_API_SECRET="your-api-secret"
 export OPNSENSE_VERIFY_TLS="false"          # for self-signed certs only
@@ -36,7 +36,7 @@ export OPNSENSE_TRANSPORT="stdio"           # or "http"
 Create `~/.config/opnsense-mcp/config.toml`:
 
 ```toml
-url = "https://192.168.1.1"
+url = "https://opnsense.example.invalid"
 api_key = "your-api-key"
 api_secret = "your-api-secret"
 verify_tls = false
@@ -60,7 +60,7 @@ Add to Claude Desktop's `claude_desktop_config.json`:
       "command": "uv",
       "args": ["run", "--project", "/path/to/opnsense-mcp-server", "opnsense-mcp"],
       "env": {
-        "OPNSENSE_URL": "https://192.168.1.1",
+        "OPNSENSE_URL": "https://opnsense.example.invalid",
         "OPNSENSE_API_KEY": "...",
         "OPNSENSE_API_SECRET": "..."
       }
@@ -125,7 +125,7 @@ Expected: All tests pass; `system_status` returns a dict with `versions` key.
 1. Ask: *"List all firewall rules."*
    - Expected: `firewall_rule_list` called; returns list of rules (may be empty).
 
-2. Ask: *"Add a firewall rule to block all traffic from 203.0.113.0/24 to any destination."*
+2. Ask: *"Add a firewall rule to block all traffic from 192.0.2.0/24 to any destination."*
    - Expected: `firewall_rule_add` called with correct action/source; returns a UUID.
 
 3. Ask: *"List firewall rules again and confirm the new rule appears."*
@@ -152,7 +152,7 @@ Expected: Create → list → verify → apply → delete → apply cycle comple
 
 2. Ask: *"Add a DNS host override: resolve 'test.example.com' to 192.0.2.1."*
    - Expected: `dns_host_override_add` called with `host=test`, `domain=example.com`,
-     `rr=A`, `server=192.0.2.1`; returns UUID.
+     `rr=A`, `server=192.0.2.3`; returns UUID.
 
 3. Ask: *"Apply the DNS changes."*
    - Expected: `dns_apply` called; OPNsense confirms success.
