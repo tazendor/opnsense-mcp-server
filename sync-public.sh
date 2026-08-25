@@ -10,8 +10,20 @@ git checkout public
 echo "Merging main..."
 git merge main --no-edit
 
-# Strip internal artifacts re-introduced by the merge.
-STRIP_PATHS=(.specify/ specs/ CLAUDE.md sync-public.sh)
+# Strip private tooling and planning artifacts re-introduced by the merge.
+# Contract files are retained because the public CI contract tests require them.
+STRIP_PATHS=(
+    .specify/
+    CLAUDE.md
+    sync-public.sh
+    'specs/*/checklists/'
+    'specs/*/data-model.md'
+    'specs/*/plan.md'
+    'specs/*/quickstart.md'
+    'specs/*/research.md'
+    'specs/*/spec.md'
+    'specs/*/tasks.md'
+)
 STRIPPED=()
 for path in "${STRIP_PATHS[@]}"; do
     if git ls-files --error-unmatch "$path" &>/dev/null 2>&1; then
